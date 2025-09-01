@@ -30,8 +30,22 @@ interface SigninProps {
 }
 
 interface AuthState {
-  status: string;
-  // Add other auth state properties as needed
+  token: string;
+  user: UserData | null;
+  loading: boolean;
+  error: string | null;
+}
+
+interface UserData {
+  id: number;
+  name: string;
+  phone: string;
+  role_id: number;
+  role_name: string;
+  district_id: number;
+  municipality_id: number;
+  district_name: string;
+  municipality_name: string;
 }
 
 interface RootState {
@@ -108,12 +122,12 @@ const Login: React.FC<SigninProps> = (props) => {
   }, []);
 
   const employeeLogin = (): void => {
- if (userName === '') {
+    if (userName === '') {
       showMessage('Please Enter username');
-    } else if (password == '') {
+    } else if (password === '') {
       showMessage('Please Enter Password');
     } else {
-       try {
+      try {
         dispatch(
           signInRequest({
             username: userName.toLowerCase(),
@@ -127,15 +141,17 @@ const Login: React.FC<SigninProps> = (props) => {
     }
   };
 
-
-
   return (
     <ImageBackground
       source={Images.pageBackground}
       resizeMode="cover"
       style={styles.onbordingStyle}
     >
-      <Loader visible={AuthReducer?.status === 'Auth/signInRequest'} />
+      {/* Updated loader to use the loading state from Redux */}
+      <Loader 
+        visible={AuthReducer?.loading} 
+        text="Signing you in..." 
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -209,7 +225,7 @@ const Login: React.FC<SigninProps> = (props) => {
               paddingLeft={moderateScale(25)}
               borderColor={Colors.inputGreyBorder}
               borderRadius={moderateScale(5)}
-              editable={true}
+              editable={!AuthReducer?.loading} // Disable input during loading
               fontFamily={Fonts.MulishRegular}
               isheadertext={true}
               value={userName}
@@ -227,12 +243,12 @@ const Login: React.FC<SigninProps> = (props) => {
               textColor={Colors.textInputColor}
               InputHeaderText={'Password'}
               placeholder={'Enter password'}
-              keyboardType={'email-address'}
+              keyboardType={'default'} // Changed from 'email-address' as it's a password field
               placeholderTextColor={Colors.black}
               paddingLeft={moderateScale(25)}
               borderColor={Colors.inputGreyBorder}
               borderRadius={moderateScale(5)}
-              editable={true}
+              editable={!AuthReducer?.loading} // Disable input during loading
               fontFamily={Fonts.MulishRegular}
               isheadertext={true}
               value={password}
@@ -250,7 +266,11 @@ const Login: React.FC<SigninProps> = (props) => {
               }}
             />
 
-          <Button title="Sign In" onPress={employeeLogin} />
+            <Button 
+              title="Sign In" 
+              onPress={employeeLogin} 
+              disabled={AuthReducer?.loading} // Disable button during loading
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

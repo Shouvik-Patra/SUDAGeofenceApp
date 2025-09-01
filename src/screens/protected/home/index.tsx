@@ -6,19 +6,18 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  StatusBar,
   SafeAreaView,
   Modal,
   Dimensions,
-  Linking,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Geolocation from '@react-native-community/geolocation';
 import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import MapView, { Polyline, Marker, Circle, Region } from 'react-native-maps';
-import { useDispatch } from 'react-redux';
-
+import CustomHeader from '@app/components/CustomHeader';
+import { Colors, Fonts, Images } from '@app/themes';
 
 const { width, height } = Dimensions.get('window');
 
@@ -40,7 +39,7 @@ interface PathStats {
 interface GeofenceData {
   district_id: number;
   municipality_id: number;
-  [key: string]: string | number; // For dynamic property names like park_name, stretch_name, etc.
+  [key: string]: string | number;
   description: string;
   latitude: number;
   longitude: number;
@@ -70,8 +69,6 @@ interface MapCoordinate {
 }
 
 const GeofenceTracker: React.FC = () => {
-  const dispatch = useDispatch();
-  
   // State definitions with proper types
   const [selectedType, setSelectedType] = useState<LocationType | ''>('');
   const [selectedName, setSelectedName] = useState<string>('');
@@ -123,6 +120,35 @@ const GeofenceTracker: React.FC = () => {
       'Bore Well Station',
       'Water Treatment Plant'
     ]
+  };
+
+  // Function to get current page title
+  const getCurrentPageTitle = (): string => {
+    switch (currentStep) {
+      case 'selection':
+        return 'Geofence Tracker';
+      case 'map':
+        return 'Map View';
+      case 'tracking':
+        return 'Tracking in Progress';
+      case 'completed':
+        return 'Tracking Completed';
+      default:
+        return 'Geofence Tracker';
+    }
+  };
+
+  // Function to handle back navigation
+  const handleBackPress = (): void => {
+    if (currentStep === 'selection') {
+      // Navigate to previous screen or exit app
+      Alert.alert('Exit', 'Do you want to exit?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Exit', onPress: () => {/* Handle exit */} }
+      ]);
+    } else {
+      resetToSelection();
+    }
   };
 
   // Request location permission
@@ -204,7 +230,6 @@ const GeofenceTracker: React.FC = () => {
       );
       totalDistance += distance;
 
-      // Calculate speed (m/s)
       if (newCoords[i].timestamp && newCoords[i-1].timestamp) {
         const timeDiff = (newCoords[i].timestamp! - newCoords[i-1].timestamp!) / 1000;
         if (timeDiff > 0) {
@@ -260,7 +285,6 @@ const GeofenceTracker: React.FC = () => {
       };
       setMapRegion(newRegion);
       
-      // Animate to new region if tracking
       if (isTracking) {
         mapRef.current.animateToRegion(newRegion, 1000);
       }
@@ -309,7 +333,6 @@ const GeofenceTracker: React.FC = () => {
     setPathStats({ distance: 0, avgSpeed: 0, maxSpeed: 0 });
     setCurrentStep('tracking');
 
-    // Start watching position
     watchId.current = Geolocation.watchPosition(
       (position: { coords: { latitude: any; longitude: any; accuracy: any; speed: any; }; }) => {
         const newCoord: Location = {
@@ -334,7 +357,8 @@ const GeofenceTracker: React.FC = () => {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 1000,
-        distanceFilter: 1
+        distanceFilter: 1,
+        interval : 1000
       }
     );
   };
@@ -371,11 +395,6 @@ const GeofenceTracker: React.FC = () => {
     return Math.round(maxDistance) || 50;
   };
 
-  // Error alert helper
-  const showErrorAlert = (message: string): void => {
-    Alert.alert('Error', message);
-  };
-
   // Submit geofence data
   const submitData = (): void => {
     if (!currentLocation || coordinates.length === 0) {
@@ -386,7 +405,6 @@ const GeofenceTracker: React.FC = () => {
       return;
     }
 
-    // Create dynamic property name based on selected type
     const dynamicPropertyName = `${selectedType.toLowerCase().replace(' ', '_')}_name`;
     
     const geofenceData: GeofenceData = {
@@ -409,14 +427,7 @@ const GeofenceTracker: React.FC = () => {
 
     setSubmittedData(geofenceData);
     setShowMapModal(false);
-     try {
-            dispatch(
-              geofenceAreaRequest(geofenceData),
-            );
-          } catch (error) {
-            console.log('Error in handleSignIn:', error);
-          }
-  
+    setShowDataModal(true);
     
     // Reset form
     setSelectedType('');
@@ -457,7 +468,18 @@ const GeofenceTracker: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+      <ImageBackground source={Images.greenbg} style={{flex:1}}>
+      {/* Custom Header */}
+      <CustomHeader
+        title={getCurrentPageTitle()}
+        onBackPress={handleBackPress}
+        showBackButton={currentStep !== 'selection'}
+        rightComponent={
+          isTracking ? (
+            <Text style={styles.timerText}>{formatTime(timer)}</Text>
+          ) : undefined
+        }
+      />
       
       {/* Selection Screen */}
       {currentStep === 'selection' && (
@@ -466,7 +488,6 @@ const GeofenceTracker: React.FC = () => {
             <View style={styles.iconContainer}>
               <Text style={styles.iconText}>📍</Text>
             </View>
-            <Text style={styles.title}>Geofence Tracker</Text>
             <Text style={styles.subtitle}>Track and map area boundaries</Text>
           </View>
 
@@ -540,18 +561,17 @@ const GeofenceTracker: React.FC = () => {
       >
         <SafeAreaView style={styles.modalContainer}>
           {/* Map Header */}
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={resetToSelection}
-            >
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-              {selectedType}: {selectedName}
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
+          <CustomHeader
+            title={`${selectedType}: ${selectedName}`}
+            onBackPress={resetToSelection}
+            showBackButton={true}
+            rightComponent={
+              isTracking ? (
+                <Text style={styles.timerTextWhite}>{formatTime(timer)}</Text>
+              ) : undefined
+            }
+            backgroundColor="#1f2937"
+          />
           
           {/* Map Container */}
           <View style={styles.mapContainer}>
@@ -695,15 +715,12 @@ const GeofenceTracker: React.FC = () => {
         onRequestClose={() => setShowDataModal(false)}
       >
         <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Submitted Geofence Data</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowDataModal(false)}
-            >
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
+          <CustomHeader
+            title="Submitted Geofence Data"
+            onBackPress={() => setShowDataModal(false)}
+            showBackButton={true}
+            backgroundColor="#16a34a"
+          />
           <ScrollView style={styles.modalContent}>
             <Text style={styles.dataText}>
               {JSON.stringify(submittedData, null, 2)}
@@ -711,6 +728,7 @@ const GeofenceTracker: React.FC = () => {
           </ScrollView>
         </SafeAreaView>
       </Modal>
+    </ImageBackground>
     </SafeAreaView>
   );
 };
@@ -746,8 +764,9 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontFamily:Fonts.MulishSemiBold,
+    fontSize: 16,
+    color: Colors.greytext2,
   },
   inputGroup: {
     marginBottom: 20,
@@ -771,7 +790,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   picker: {
-    height: Platform.OS === 'ios' ? 180 : 50,
+    height: Platform.OS === 'ios' ? 180 : 60,
     color: '#1f2937',
     backgroundColor: 'transparent',
   },
@@ -928,6 +947,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     padding: 15,
     borderRadius: 8,
+  },
+  timerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2563eb',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    textAlign: 'center',
+    minWidth: 60,
+  },
+  timerTextWhite: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    textAlign: 'center',
+    minWidth: 60,
   },
 });
 
