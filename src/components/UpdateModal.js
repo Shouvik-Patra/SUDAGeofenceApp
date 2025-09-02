@@ -63,7 +63,7 @@ const UpdateModal = ({ isVisible, onClose }) => {
             style={styles.downloadBtn}
             onPress={() =>
               Linking.openURL(
-                'https://play.google.com/store/apps/details?id=com.eattendence&pcampaignid=web_share',
+                'https://play.google.com/store/apps/details?id=com.ebsattendance&pcampaignid=web_share',
               )
             }
           >

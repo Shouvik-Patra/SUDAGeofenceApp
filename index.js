@@ -10,7 +10,7 @@ import { Provider } from 'react-redux';
 
 LogBox.ignoreAllLogs();
 
-const eAttandence=()=>{
+const ebsAttandance=()=>{
     return(
         <Provider store={Store}>
             <App />
@@ -18,4 +18,4 @@ const eAttandence=()=>{
     )
 }
 
-AppRegistry.registerComponent(appName, () => eAttandence);
+AppRegistry.registerComponent(appName, () => ebsAttandance);
