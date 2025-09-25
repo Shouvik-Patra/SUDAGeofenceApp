@@ -5,9 +5,11 @@ import { logger } from 'redux-logger';
 import rootSaga from './service/rootSaga';
 
 import authReducer from './slice/auth.slice';
+import userReducer from './slice/user.slice';
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  user: userReducer,
 });
 
 

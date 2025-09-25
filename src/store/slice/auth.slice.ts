@@ -1,5 +1,5 @@
 import { SIGN_IN_TYPE } from '@app/types';
-import {createSlice, PayloadAction} from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UserData {
   id: number;
@@ -14,6 +14,7 @@ interface UserData {
 }
 
 interface AuthState {
+  refreshToken: string;
   token: string;
   user: UserData | null;
   loading: boolean;
@@ -21,6 +22,7 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
+  refreshToken: '',
   token: '',
   user: null,
   loading: false,
@@ -38,7 +40,7 @@ const authSlice = createSlice({
     },
     signInSuccess(
       state,
-      action: PayloadAction<{token: string; user: UserData}>,
+      action: PayloadAction<{ token: string; user: UserData }>,
     ) {
       state.loading = false;
       state.token = action.payload.token;
@@ -66,10 +68,7 @@ const authSlice = createSlice({
       state.error = action.payload;
     },
 
-    setToken(
-      state,
-      action: PayloadAction<{token: string; user?: UserData}>,
-    ) {
+    setToken(state, action: PayloadAction<{ token: string; user?: UserData }>) {
       state.loading = false;
       state.token = action.payload.token;
       if (action.payload.user) {

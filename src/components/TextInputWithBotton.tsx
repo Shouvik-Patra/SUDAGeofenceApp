@@ -250,7 +250,7 @@ const TextInputWithButton: FC<TextInputWithButtonProps> = ({
     textAlign,
     letterSpacing,
     color: textColor,
-    marginLeft: horizontalScale(5),
+    marginLeft: normalize(-5),
     fontFamily: Fonts.MulishRegular,
     fontSize,
     shadowColor,

@@ -18,6 +18,10 @@ import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import MapView, { Polyline, Marker, Circle, Region } from 'react-native-maps';
 import CustomHeader from '@app/components/CustomHeader';
 import { Colors, Fonts, Images } from '@app/themes';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState, useAppDispatch, useAppSelector } from '@app/store';
+import { useIsFocused } from '@react-navigation/native';
+import { assignedParkRequest } from '@app/store/slice/user.slice';
 
 const { width, height } = Dimensions.get('window');
 
@@ -69,6 +73,11 @@ interface MapCoordinate {
 }
 
 const GeofenceTracker: React.FC = () => {
+ const dispatch = useDispatch();
+  const isFocused = useIsFocused();
+    const{loading, error} = useAppSelector(state => state.user);
+
+
   // State definitions with proper types
   const [selectedType, setSelectedType] = useState<LocationType | ''>('');
   const [selectedName, setSelectedName] = useState<string>('');
@@ -137,7 +146,19 @@ const GeofenceTracker: React.FC = () => {
         return 'Geofence Tracker';
     }
   };
+  useEffect(() => {
+    if (isFocused) {
+      getAssignedParkInfo();
+    }
+  }, [isFocused]);
 
+  const getAssignedParkInfo = async () => {
+    try {
+      dispatch(assignedParkRequest());
+    } catch (error) {
+      console.log('Error in fetching posts', error);
+    }
+  };
   // Function to handle back navigation
   const handleBackPress = (): void => {
     if (currentStep === 'selection') {

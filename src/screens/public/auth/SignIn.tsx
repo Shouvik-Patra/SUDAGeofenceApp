@@ -65,9 +65,8 @@ const Login: React.FC<SigninProps> = (props) => {
   const dispatch = useDispatch();
   const isFocused = useIsFocused();
   const AuthReducer = useSelector((state: RootState) => state.AuthReducer);
-  console.log('login>>', AuthReducer);
 
-  const [userName, setUserName] = useState<string>('development-Municipality');
+  const [userName, setUserName] = useState<string>('shouvikpatra');
   const [secure1, setSecure1] = useState<boolean>(true);
   const [password, setPassword] = useState<string>('123456');
   const [keyboardShown, setKeyboardShown] = useState<boolean>(false);

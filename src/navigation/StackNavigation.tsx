@@ -17,6 +17,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function StackNavigation() {
   const [isLoading, setIsLoading] = useState(true);
   const isToken = useAppSelector(state => state.auth.token);
+console.log("isToken>>>>",isToken);
 
   const theme: Theme = {
     ...DefaultTheme,

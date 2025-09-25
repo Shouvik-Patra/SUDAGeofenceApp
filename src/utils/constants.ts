@@ -2,12 +2,13 @@ import { BASE_URL } from '@env';
 
 export const API = {
   auth: {
-    login: '/employee-login-park',
+    login: 'login',
     logout: '',
     refreshToken: 'auth/refresh',
   },
   user: {
-    profile: 'auth/me',
+    assignedParkData: 'parkDetails',
+    profile: '',
     editProfile: '',
     deleteAccount: '',
   },
