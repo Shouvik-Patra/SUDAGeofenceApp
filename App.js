@@ -1,4 +1,4 @@
-import {StatusBar, StyleSheet} from 'react-native';
+import {SafeAreaView, StatusBar, StyleSheet} from 'react-native';
 import React, {useEffect} from 'react';
 import MainStack from './src/navigation/MainStack';
 import { useDispatch } from 'react-redux';
@@ -14,6 +14,7 @@ const App = () => {
       <StatusBar  
         animated={true}
         backgroundColor="black"
+        barStyle={'dark-content'}
       />
     
       <MainStack />

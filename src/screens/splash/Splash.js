@@ -11,14 +11,25 @@ const Splash = props => {
   return (
     <ImageBackground
       style={{ flex: 1,justifyContent:'center',alignItems:'center' }}
-      source={Images.pageBackground}
+      source={Images.appBG}
       resizeMode="cover"
     >
       <Image
-        source={Images.appicon}
+        source={Images.wblogo}
         style={{
-          height: normalize(150),
-          width: normalize(150),
+          zIndex:99,
+          top:65,
+          height: normalize(120),
+          width: normalize(120),
+        }}
+        resizeMode="contain"
+      />
+      <Image
+        source={Images.splash}
+        style={{
+          zIndex:98,
+          height: normalize(250),
+          width: normalize(250),
         }}
         resizeMode="contain"
       />

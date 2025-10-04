@@ -27,7 +27,7 @@ export default function Button(props) {
         height: props.height,
         width: '100%',
         borderRadius: normalize(10),
-        backgroundColor: Colors.skyblue,
+        backgroundColor: Colors.green,
         justifyContent: props.justifyContent,
         alignItems: 'center',
         alignSelf: props.alignSelf,

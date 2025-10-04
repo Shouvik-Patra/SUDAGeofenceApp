@@ -9,18 +9,25 @@ import {
   PermissionsAndroid,
   Platform,
   ImageBackground,
+  Dimensions,
+  FlatList,
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
+import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import Header from '../../components/Header';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import { useDispatch, useSelector } from 'react-redux';
 import { createParkGeofenceRequest } from '../../redux/reducer/ProfileReducer';
 import showErrorAlert from '../../utils/helpers/Toast';
 import { Images } from '../../themes/ThemePath';
+
+const { width } = Dimensions.get('window');
 let status = '';
+
 const Geotracking = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+  
   // Props from previous page
   const {
     park_details_id,
@@ -32,11 +39,14 @@ const Geotracking = props => {
     longitude,
     radius_meters,
   } = props?.route?.params || {};
+  
   const dispatch = useDispatch();
+  const mapRef = useRef(null);
   const [isTracking, setIsTracking] = useState(false);
   const [coordinates, setCoordinates] = useState([]);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [hasPermission, setHasPermission] = useState(false);
+  const [initialLocation, setInitialLocation] = useState(null);
 
   const startTimeRef = useRef(null);
   const timerIntervalRef = useRef(null);
@@ -44,10 +54,24 @@ const Geotracking = props => {
 
   useEffect(() => {
     requestLocationPermission();
+    // Set initial location from props
+    if (latitude && longitude) {
+      setInitialLocation({ latitude, longitude });
+    }
     return () => {
       stopTracking();
     };
   }, []);
+
+  useEffect(() => {
+    // Auto-fit map to show all coordinates
+    if (coordinates.length > 0 && mapRef.current) {
+      mapRef.current.fitToCoordinates(coordinates, {
+        edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+        animated: true,
+      });
+    }
+  }, [coordinates]);
 
   const requestLocationPermission = async () => {
     try {
@@ -94,6 +118,11 @@ const Geotracking = props => {
       setElapsedTime(0);
       startTimeRef.current = Date.now();
 
+      // Add initial location from props as first coordinate
+      if (latitude && longitude) {
+        setCoordinates([{ latitude, longitude }]);
+      }
+
       // Start timer
       timerIntervalRef.current = setInterval(() => {
         if (startTimeRef.current) {
@@ -106,8 +135,8 @@ const Geotracking = props => {
       // Start location tracking
       watchIdRef.current = Geolocation.watchPosition(
         position => {
-          const { latitude, longitude } = position.coords;
-          setCoordinates(prev => [...prev, { latitude, longitude }]);
+          const { latitude: lat, longitude: lng } = position.coords;
+          setCoordinates(prev => [...prev, { latitude: lat, longitude: lng }]);
         },
         error => {
           console.error('Location error:', error);
@@ -170,7 +199,7 @@ const Geotracking = props => {
   };
 
   const handleSave = () => {
-    if (coordinates.length < 2) {
+    if (coordinates.length < 3) {
       Alert.alert(
         'Insufficient Coordinates',
         'At least 3 coordinates are required to create a polygon',
@@ -202,20 +231,6 @@ const Geotracking = props => {
         console.log(err);
         showErrorAlert('Please connect to internet');
       });
-    // Alert.alert(
-    //   'Geofence Created',
-    //   `Coordinates: ${coordinates.length}\nTime: ${formatTime(elapsedTime)}`,
-    //   [
-    //     {
-    //       text: 'OK',
-    //       onPress: () => {
-    //         // You can call your API here or navigate back
-    //         // Example: await saveGeofence(payload);
-    //         // navigation.goBack();
-    //       },
-    //     },
-    //   ],
-    // );
   };
 
   if (status == '' || ProfileReducer.status != status) {
@@ -232,6 +247,7 @@ const Geotracking = props => {
         break;
     }
   }
+
   return (
     <ImageBackground
       source={Images.appBG}
@@ -248,6 +264,59 @@ const Geotracking = props => {
         <View style={styles.header}>
           <Text style={styles.title}>Geofence Tracking</Text>
           <Text style={styles.subtitle}>{park_name || 'Park Name'}</Text>
+        </View>
+
+        {/* Map View */}
+        <View style={styles.mapContainer}>
+          <MapView
+            ref={mapRef}
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            initialRegion={{
+              latitude: initialLocation?.latitude || latitude || 37.78825,
+              longitude: initialLocation?.longitude || longitude || -122.4324,
+              latitudeDelta: 0.005,
+              longitudeDelta: 0.005,
+            }}
+          >
+            {/* Starting point marker */}
+            {coordinates.length > 0 && (
+              <Marker
+                coordinate={coordinates[0]}
+                title="Start"
+                pinColor="green"
+              />
+            )}
+
+            {/* Current location marker (last coordinate) */}
+            {coordinates.length > 0 && (
+              <Marker
+                coordinate={coordinates[coordinates.length - 1]}
+                title="Current Location"
+                pinColor="red"
+              />
+            )}
+
+            {/* Draw the tracking path */}
+            {coordinates.length > 1 && (
+              <Polyline
+                coordinates={coordinates}
+                strokeColor="#2196F3"
+                strokeWidth={4}
+                lineDashPattern={[1]}
+              />
+            )}
+
+            {/* Draw polygon preview when tracking stops */}
+            {!isTracking && coordinates.length >= 3 && (
+              <Polyline
+                coordinates={[...coordinates, coordinates[0]]}
+                strokeColor="#4CAF50"
+                strokeWidth={3}
+                fillColor="rgba(76, 175, 80, 0.2)"
+              />
+            )}
+          </MapView>
         </View>
 
         <View style={styles.statsContainer}>
@@ -274,25 +343,28 @@ const Geotracking = props => {
           </Text>
         </View>
 
-        <ScrollView style={styles.coordinatesList}>
+        <View style={styles.coordinatesList}>
           <Text style={styles.coordinatesTitle}>Recent Coordinates:</Text>
-          {coordinates
-            .slice(-5)
-            .reverse()
-            .map((coord, index) => (
-              <View key={index} style={styles.coordinateItem}>
+          <FlatList
+            data={coordinates.length > 0 ? coordinates.slice(-5).reverse() : []}
+            keyExtractor={(item, index) => `coord-${index}`}
+            renderItem={({ item, index }) => (
+              <View style={styles.coordinateItem}>
                 <Text style={styles.coordinateText}>
-                  {coordinates.length - index}. Lat: {coord.latitude.toFixed(6)}
-                  , Lng: {coord.longitude.toFixed(6)}
+                  {coordinates.length - index}. Lat: {item.latitude.toFixed(6)}
+                  , Lng: {item.longitude.toFixed(6)}
                 </Text>
               </View>
-            ))}
-          {coordinates.length === 0 && (
-            <Text style={styles.noDataText}>
-              Start tracking to collect coordinates
-            </Text>
-          )}
-        </ScrollView>
+            )}
+            ListEmptyComponent={
+              <Text style={styles.noDataText}>
+                Start tracking to collect coordinates
+              </Text>
+            }
+            style={styles.coordinatesScroll}
+            nestedScrollEnabled={true}
+          />
+        </View>
 
         <View style={styles.buttonContainer}>
           {!isTracking ? (
@@ -317,6 +389,7 @@ const Geotracking = props => {
               styles.button,
               styles.saveButton,
               coordinates.length < 3 && styles.disabledButton,
+              
             ]}
             onPress={handleSave}
             disabled={coordinates.length < 3}
@@ -334,8 +407,8 @@ export default Geotracking;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#F5F5F5',
     padding: 20,
+  
   },
   header: {
     marginBottom: 20,
@@ -349,6 +422,20 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#666',
+  },
+  mapContainer: {
+    height: 300,
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -400,12 +487,15 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   coordinatesList: {
-    flex: 1,
     backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 15,
     marginBottom: 20,
     elevation: 2,
+    maxHeight: 200,
+  },
+  coordinatesScroll: {
+    maxHeight: 150,
   },
   coordinatesTitle: {
     fontSize: 16,
@@ -431,6 +521,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 10,
+    marginBottom: 20,
   },
   button: {
     padding: 16,
@@ -450,6 +541,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: '#2196F3',
+      marginBottom:100
   },
   disabledButton: {
     backgroundColor: '#BDBDBD',

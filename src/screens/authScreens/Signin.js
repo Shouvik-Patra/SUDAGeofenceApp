@@ -95,7 +95,7 @@ const Signin = props => {
   }
   return (
     <ImageBackground
-      source={Images.pageBackground}
+      source={Images.appBG}
       resizeMode="cover"
       style={styles.onbordingStyle}
     >
@@ -111,7 +111,7 @@ const Signin = props => {
                 width: normalize(100),
                 marginTop:-30
               }}
-              source={Images.wb_logo}
+              source={Images.wblogo}
             />
 
             <Text style={[styles.headerText2,{fontSize:18,fontWeight:'bold'}]}>
@@ -131,6 +131,8 @@ const Signin = props => {
             maxHeight: windowHeight - normalize(200),
             backgroundColor: '#FFF',
             borderRadius: normalize(10),
+            borderWidth:2,
+            borderColor:Colors.green,
             padding: normalize(15),
             flex: 1,
             position: 'absolute',
@@ -257,14 +259,14 @@ const styles = StyleSheet.create({
     // fontFamily: Fonts.MulishRegular,
     fontSize: normalize(22),
     marginTop: normalize(15),
-    color: Colors.darkblue,
+    color: Colors.green,
     fontWeight: '900',
     textAlign: 'center',
   },
   headerText2: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: normalize(12),
-    color: Colors.fontWhite,
+    color: Colors.black,
 
     textAlign: 'center',
   },

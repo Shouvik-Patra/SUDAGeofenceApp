@@ -1,4 +1,5 @@
 import {
+  Image,
   ImageBackground,
   PermissionsAndroid,
   Platform,
@@ -219,6 +220,19 @@ const Home = props => {
       />
 
       <View style={styles.contentContainer}>
+
+        <Image
+                source={Images.wblogo}
+                style={{
+                  zIndex:99,
+                  marginTop:25,
+                  height: normalize(100),
+                  width: normalize(100),
+                  alignSelf:"center",
+                  marginBottom:30
+                }}
+                resizeMode="contain"
+              />
         {/* Main Options */}
         <View style={styles.optionsContainer}>
           <TouchableOpacity
@@ -370,7 +384,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    justifyContent: 'center',
+    // justifyContent: 'center',
     padding: normalize(20),
   },
   optionsContainer: {
