@@ -11,6 +11,7 @@ import {navigationRef} from './RootNaivgation';
 import Home from '@screens/protected/home';
 import Login from '@app/screens/public/auth/SignIn';
 import Splash from '@app/screens/public/auth/Splash';
+import GeofenceTracker from '@app/screens/protected/geoTracking';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -33,8 +34,9 @@ console.log("isToken>>>>",isToken);
   };
 
   const MainScreens = {
-    // Auth
+    // Main
     Home: Home,
+    GeofenceTracker:GeofenceTracker
   };
 
   useEffect(() => {

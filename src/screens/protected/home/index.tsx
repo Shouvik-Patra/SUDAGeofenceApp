@@ -18,10 +18,9 @@ import { request, PERMISSIONS, RESULTS } from 'react-native-permissions';
 import MapView, { Polyline, Marker, Circle, Region } from 'react-native-maps';
 import CustomHeader from '@app/components/CustomHeader';
 import { Colors, Fonts, Images } from '@app/themes';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, useAppDispatch, useAppSelector } from '@app/store';
+import { useDispatch } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
-import { assignedParkRequest } from '@app/store/slice/user.slice';
+import { store } from '@app/store';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,6 +37,24 @@ interface PathStats {
   distance: number;
   avgSpeed: number;
   maxSpeed: number;
+}
+
+interface ParkData {
+  id: number;
+  ward: string;
+  project_code: string;
+  park_stretch_name: string;
+  project_type: string;
+  created_at: string;
+}
+
+interface ApiResponse {
+  meta: {
+    status: boolean;
+    message: string;
+    code: number;
+  };
+  data: ParkData[];
 }
 
 interface GeofenceData {
@@ -58,28 +75,19 @@ interface GeofenceData {
   created_at: string;
 }
 
-type LocationType = 'Park' | 'Stretch' | 'Water collection point';
 type StepType = 'selection' | 'map' | 'tracking' | 'completed';
-
-interface LocationOptions {
-  Park: string[];
-  Stretch: string[];
-  'Water collection point': string[];
-}
 
 interface MapCoordinate {
   latitude: number;
   longitude: number;
 }
 
-const GeofenceTracker: React.FC = () => {
- const dispatch = useDispatch();
+const Home: React.FC<{navigation: any}> = ({navigation}) =>  {
+  const dispatch = useDispatch();
   const isFocused = useIsFocused();
-    const{loading, error} = useAppSelector(state => state.user);
-
 
   // State definitions with proper types
-  const [selectedType, setSelectedType] = useState<LocationType | ''>('');
+  const [selectedType, setSelectedType] = useState<string>('');
   const [selectedName, setSelectedName] = useState<string>('');
   const [currentStep, setCurrentStep] = useState<StepType>('selection');
   const [isTracking, setIsTracking] = useState<boolean>(false);
@@ -100,36 +108,21 @@ const GeofenceTracker: React.FC = () => {
     avgSpeed: 0,
     maxSpeed: 0
   });
+
+  // API Data
+  const [parkData, setParkData] = useState<ParkData[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [projectTypes, setProjectTypes] = useState<string[]>([]);
+  const [filteredParks, setFilteredParks] = useState<ParkData[]>([]);
   
   // Refs with proper types
   const timerRef = useRef<number | null>(null);
   const watchId = useRef<number | null>(null);
   const mapRef = useRef<MapView | null>(null);
 
-  // Sample data for dropdowns based on type
-  const locationOptions: LocationOptions = {
-    Park: [
-      'Central City Park',
-      'Riverside Park',
-      'Community Garden Park',
-      'Sports Complex Park',
-      'Children\'s Play Park'
-    ],
-    Stretch: [
-      'Main Street Stretch',
-      'Highway 101 Stretch',
-      'Riverside Walk Stretch',
-      'Market Road Stretch',
-      'Industrial Area Stretch'
-    ],
-    'Water collection point': [
-      'Municipal Water Tank',
-      'Community Well Point',
-      'Reservoir Collection Point',
-      'Bore Well Station',
-      'Water Treatment Plant'
-    ]
-  };
+  // API Configuration - Replace with your actual token
+  const API_BASE_URL = 'http://3.108.65.168/v1/api';
+    const {token} = store.getState().auth;
 
   // Function to get current page title
   const getCurrentPageTitle = (): string => {
@@ -146,23 +139,68 @@ const GeofenceTracker: React.FC = () => {
         return 'Geofence Tracker';
     }
   };
+
   useEffect(() => {
     if (isFocused) {
-      getAssignedParkInfo();
+      fetchParkDetails();
     }
   }, [isFocused]);
 
-  const getAssignedParkInfo = async () => {
+  // Fetch park details from API
+  const fetchParkDetails = async (): Promise<void> => {
+    setLoading(true);
     try {
-      dispatch(assignedParkRequest());
+      const response = await fetch(`${API_BASE_URL}/parkDetails`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+console.log("API resp>>>>>>>>>>",response);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result: ApiResponse = await response.json();
+      
+      if (result.meta.status && result.data) {
+        setParkData(result.data);
+        
+        // Extract unique project types
+        const types = [...new Set(result.data
+          .map(item => item.project_type)
+          .filter(type => type && type.trim() !== '')
+        )];
+        setProjectTypes(types);
+      } else {
+        Alert.alert('Error', result.meta.message || 'Failed to fetch park details');
+      }
     } catch (error) {
-      console.log('Error in fetching posts', error);
+      console.error('Error fetching park details:', error);
+      Alert.alert(
+        'Network Error',
+        'Unable to fetch park details. Please check your internet connection and try again.'
+      );
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Filter parks based on selected type
+  useEffect(() => {
+    if (selectedType && parkData.length > 0) {
+      const filtered = parkData.filter(park => park.project_type === selectedType);
+      setFilteredParks(filtered);
+    } else {
+      setFilteredParks([]);
+    }
+  }, [selectedType, parkData]);
+
   // Function to handle back navigation
   const handleBackPress = (): void => {
     if (currentStep === 'selection') {
-      // Navigate to previous screen or exit app
       Alert.alert('Exit', 'Do you want to exit?', [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Exit', onPress: () => {/* Handle exit */} }
@@ -200,7 +238,7 @@ const GeofenceTracker: React.FC = () => {
   const getCurrentLocation = (): Promise<Location> => {
     return new Promise((resolve, reject) => {
       Geolocation.getCurrentPosition(
-        (position: { coords: { latitude: any; longitude: any; accuracy: any; }; }) => {
+        (position) => {
           const location: Location = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
@@ -208,7 +246,7 @@ const GeofenceTracker: React.FC = () => {
           };
           resolve(location);
         },
-        (error: any) => {
+        (error) => {
           console.error('Error getting location:', error);
           reject(error);
         },
@@ -334,10 +372,8 @@ const GeofenceTracker: React.FC = () => {
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       };
-      setMapRegion(newRegion);
+      navigation.navigate('GeofenceTracker',{newRegion:newRegion})
       
-      setCurrentStep('map');
-      setShowMapModal(true);
     } catch (error) {
       Alert.alert(
         'Location Error',
@@ -355,7 +391,7 @@ const GeofenceTracker: React.FC = () => {
     setCurrentStep('tracking');
 
     watchId.current = Geolocation.watchPosition(
-      (position: { coords: { latitude: any; longitude: any; accuracy: any; speed: any; }; }) => {
+      (position) => {
         const newCoord: Location = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -367,7 +403,7 @@ const GeofenceTracker: React.FC = () => {
         setCurrentLocation(newCoord);
         setCoordinates(prev => [...prev, newCoord]);
       },
-      (error: any) => {
+      (error) => {
         console.error('Error getting location:', error);
         Alert.alert(
           'Location Error',
@@ -379,7 +415,7 @@ const GeofenceTracker: React.FC = () => {
         timeout: 10000,
         maximumAge: 1000,
         distanceFilter: 1,
-        interval : 1000
+        interval: 1000
       }
     );
   };
@@ -451,13 +487,7 @@ const GeofenceTracker: React.FC = () => {
     setShowDataModal(true);
     
     // Reset form
-    setSelectedType('');
-    setSelectedName('');
-    setTimer(0);
-    setCoordinates([]);
-    setCurrentLocation(null);
-    setPathStats({ distance: 0, avgSpeed: 0, maxSpeed: 0 });
-    setCurrentStep('selection');
+    resetToSelection();
   };
 
   // Convert coordinates for polyline
@@ -479,10 +509,12 @@ const GeofenceTracker: React.FC = () => {
     setCurrentLocation(null);
     setTimer(0);
     setPathStats({ distance: 0, avgSpeed: 0, maxSpeed: 0 });
+    setSelectedType('');
+    setSelectedName('');
   };
 
   // Handle type selection
-  const handleTypeSelection = (value: LocationType | ''): void => {
+  const handleTypeSelection = (value: string): void => {
     setSelectedType(value);
     setSelectedName('');
   };
@@ -490,270 +522,296 @@ const GeofenceTracker: React.FC = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ImageBackground source={Images.greenbg} style={{flex:1}}>
-      {/* Custom Header */}
-      <CustomHeader
-        title={getCurrentPageTitle()}
-        onBackPress={handleBackPress}
-        showBackButton={currentStep !== 'selection'}
-        rightComponent={
-          isTracking ? (
-            <Text style={styles.timerText}>{formatTime(timer)}</Text>
-          ) : undefined
-        }
-      />
-      
-      {/* Selection Screen */}
-      {currentStep === 'selection' && (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.header}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.iconText}>📍</Text>
+        {/* Custom Header */}
+        <CustomHeader
+          title={getCurrentPageTitle()}
+          onBackPress={handleBackPress}
+          showBackButton={currentStep !== 'selection'}
+          rightComponent={
+            isTracking ? (
+              <Text style={styles.timerText}>{formatTime(timer)}</Text>
+            ) : undefined
+          }
+        />
+        
+        {/* Selection Screen */}
+        {currentStep === 'selection' && (
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <View style={styles.header}>
+              <View style={styles.iconContainer}>
+                <Text style={styles.iconText}>📍</Text>
+              </View>
+              <Text style={styles.subtitle}>Track and map area boundaries</Text>
             </View>
-            <Text style={styles.subtitle}>Track and map area boundaries</Text>
-          </View>
 
-          {/* Type Selection */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Select Location Type</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedType}
-                onValueChange={handleTypeSelection}
-                style={styles.picker}
-                itemStyle={styles.pickerItem}
-              >
-                <Picker.Item label="Choose a type..." value="" style={styles.pickerItemStyle} />
-                <Picker.Item label="Park" value="Park" style={styles.pickerItemStyle} />
-                <Picker.Item label="Stretch" value="Stretch" style={styles.pickerItemStyle} />
-                <Picker.Item label="Water Collection Point" value="Water collection point" style={styles.pickerItemStyle} />
-              </Picker>
-            </View>
-          </View>
-
-          {/* Name Selection */}
-          {selectedType && (
+            {/* Type Selection */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Select {selectedType} Name</Text>
+              <Text style={styles.label}>Select Project Type</Text>
               <View style={styles.pickerContainer}>
                 <Picker
-                  selectedValue={selectedName}
-                  onValueChange={setSelectedName}
+                  selectedValue={selectedType}
+                  onValueChange={handleTypeSelection}
                   style={styles.picker}
                   itemStyle={styles.pickerItem}
+                  enabled={!loading}
                 >
                   <Picker.Item 
-                    label={`Choose a ${selectedType.toLowerCase()}...`} 
+                    label={loading ? "Loading..." : "Choose a type..."} 
                     value="" 
-                    style={styles.pickerItemStyle}
+                    style={styles.pickerItemStyle} 
                   />
-                  {locationOptions[selectedType as LocationType].map((name: string, index: number) => (
+                  {projectTypes.map((type: string, index: number) => (
                     <Picker.Item 
                       key={index} 
-                      label={name} 
-                      value={name} 
+                      label={type} 
+                      value={type} 
                       style={styles.pickerItemStyle}
                     />
                   ))}
                 </Picker>
               </View>
             </View>
-          )}
 
-          {/* Proceed Button */}
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.proceedButton,
-              (!selectedType || !selectedName) && styles.disabledButton
-            ]}
-            onPress={proceedToMap}
-            disabled={!selectedType || !selectedName}
-          >
-            <Text style={styles.buttonText}>🗺️ Proceed to Map View</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
+            {/* Name Selection */}
+            {selectedType && filteredParks.length > 0 && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Select {selectedType} Name</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={selectedName}
+                    onValueChange={setSelectedName}
+                    style={styles.picker}
+                    itemStyle={styles.pickerItem}
+                  >
+                    <Picker.Item 
+                      label="Choose a name..." 
+                      value="" 
+                      style={styles.pickerItemStyle}
+                    />
+                    {filteredParks.map((park: ParkData, index: number) => (
+                      <Picker.Item 
+                        key={park.id} 
+                        label={park.park_stretch_name} 
+                        value={park.park_stretch_name} 
+                        style={styles.pickerItemStyle}
+                      />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
+            )}
 
-      {/* Map Modal */}
-      <Modal
-        visible={showMapModal}
-        animationType="slide"
-        onRequestClose={resetToSelection}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          {/* Map Header */}
-          <CustomHeader
-            title={`${selectedType}: ${selectedName}`}
-            onBackPress={resetToSelection}
-            showBackButton={true}
-            rightComponent={
-              isTracking ? (
-                <Text style={styles.timerTextWhite}>{formatTime(timer)}</Text>
-              ) : undefined
-            }
-            backgroundColor="#1f2937"
-          />
-          
-          {/* Map Container */}
-          <View style={styles.mapContainer}>
-            <MapView
-              ref={mapRef}
-              style={styles.map}
-              region={mapRegion}
-              showsUserLocation={true}
-              showsMyLocationButton={true}
-              followsUserLocation={isTracking}
-              mapType="standard"
+            {selectedType && filteredParks.length === 0 && !loading && (
+              <Text style={styles.noDataText}>
+                No data available for selected type
+              </Text>
+            )}
+
+            {/* Proceed Button */}
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.proceedButton,
+                (!selectedType || !selectedName || loading) && styles.disabledButton
+              ]}
+              onPress={proceedToMap}
+              disabled={!selectedType || !selectedName || loading}
             >
-              {/* Walking Path Polyline */}
-              {coordinates.length > 1 && (
-                <Polyline
-                  coordinates={getPolylineCoordinates()}
-                  strokeColor="#2563eb"
-                  strokeWidth={4}
-                  lineDashPattern={[5, 5]}
-                />
-              )}
-              
-              {/* Start Point Marker */}
-              {coordinates.length > 0 && (
-                <Marker
-                  coordinate={{
-                    latitude: coordinates[0].lat,
-                    longitude: coordinates[0].lng
-                  }}
-                  title="Start Point"
-                  pinColor="green"
-                />
-              )}
-              
-              {/* Current/End Point Marker */}
-              {currentLocation && (
-                <Marker
-                  coordinate={{
-                    latitude: currentLocation.lat,
-                    longitude: currentLocation.lng
-                  }}
-                  title={isTracking ? "Current Position" : "End Point"}
-                  pinColor={isTracking ? "blue" : "red"}
-                />
-              )}
-              
-              {/* Geofence Circle */}
-              {currentStep === 'completed' && coordinates.length > 0 && (
-                <Circle
-                  center={{
-                    latitude: coordinates[0].lat,
-                    longitude: coordinates[0].lng
-                  }}
-                  radius={calculateRadius(coordinates)}
-                  strokeColor="rgba(37, 99, 235, 0.5)"
-                  fillColor="rgba(37, 99, 235, 0.1)"
-                />
-              )}
-            </MapView>
-            
-            {/* Map Overlay Info */}
-            <View style={styles.mapOverlay}>
-              <View style={styles.mapInfo}>
-                <Text style={styles.mapInfoText}>
-                  Timer: {formatTime(timer)}
-                </Text>
-                <Text style={styles.mapInfoText}>
-                  Points: {coordinates.length}
-                </Text>
-                {coordinates.length > 1 && (
-                  <Text style={styles.mapInfoText}>
-                    Distance: {pathStats.distance.toFixed(0)}m
-                  </Text>
-                )}
-                {currentStep === 'completed' && coordinates.length > 0 && (
-                  <Text style={styles.mapInfoText}>
-                    Radius: {calculateRadius(coordinates)}m
-                  </Text>
-                )}
-              </View>
-            </View>
+              <Text style={styles.buttonText}>
+                {loading ? '⏳ Loading...' : '🗺️ Proceed to Map View'}
+              </Text>
+            </TouchableOpacity>
 
-            {/* Status Banner */}
-            <View style={styles.statusBanner}>
-              {currentStep === 'map' && (
-                <Text style={styles.statusText}>📍 Ready to start walking. Tap "Start Walking" to begin tracking.</Text>
-              )}
-              {currentStep === 'tracking' && (
-                <Text style={styles.statusText}>🚶‍♂️ Walking... Your path is being tracked on the map!</Text>
-              )}
-              {currentStep === 'completed' && (
-                <Text style={styles.statusText}>✅ Walking completed! Review your path and submit the data.</Text>
-              )}
-            </View>
-          </View>
-          
-          {/* Map Bottom Controls */}
-          <View style={styles.mapBottomControls}>
-            {currentStep === 'map' && (
-              <TouchableOpacity
-                style={[styles.button, styles.startButton]}
-                onPress={startWalking}
-              >
-                <Text style={styles.buttonText}>▶️ Start Walking</Text>
-              </TouchableOpacity>
-            )}
-
-            {currentStep === 'tracking' && (
-              <TouchableOpacity
-                style={[styles.button, styles.stopButton]}
-                onPress={stopWalking}
-              >
-                <Text style={styles.buttonText}>⏹️ Stop Walking</Text>
-              </TouchableOpacity>
-            )}
-
-            {currentStep === 'completed' && (
-              <View style={styles.completedControls}>
-                <TouchableOpacity
-                  style={[styles.button, styles.submitButton, styles.flexButton]}
-                  onPress={submitData}
-                >
-                  <Text style={styles.buttonText}>📤 Submit Data</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.button, styles.resetButton, styles.flexButton]}
-                  onPress={resetToSelection}
-                >
-                  <Text style={styles.buttonText}>🔄 New Track</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Submitted Data Modal */}
-      <Modal
-        visible={showDataModal}
-        animationType="slide"
-        onRequestClose={() => setShowDataModal(false)}
-      >
-        <SafeAreaView style={styles.modalContainer}>
-          <CustomHeader
-            title="Submitted Geofence Data"
-            onBackPress={() => setShowDataModal(false)}
-            showBackButton={true}
-            backgroundColor="#16a34a"
-          />
-          <ScrollView style={styles.modalContent}>
-            <Text style={styles.dataText}>
-              {JSON.stringify(submittedData, null, 2)}
-            </Text>
+            {/* Refresh Button */}
+            <TouchableOpacity
+              style={[styles.button, styles.refreshButton]}
+              onPress={fetchParkDetails}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>🔄 Refresh Data</Text>
+            </TouchableOpacity>
           </ScrollView>
-        </SafeAreaView>
-      </Modal>
-    </ImageBackground>
+        )}
+
+        {/* Map Modal */}
+        <Modal
+          visible={showMapModal}
+          animationType="slide"
+          onRequestClose={resetToSelection}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            {/* Map Header */}
+            <CustomHeader
+              title={`${selectedType}: ${selectedName}`}
+              onBackPress={resetToSelection}
+              showBackButton={true}
+              rightComponent={
+                isTracking ? (
+                  <Text style={styles.timerTextWhite}>{formatTime(timer)}</Text>
+                ) : undefined
+              }
+              backgroundColor="#1f2937"
+            />
+            
+            {/* Map Container */}
+            <View style={styles.mapContainer}>
+              <MapView
+                ref={mapRef}
+                style={styles.map}
+                region={mapRegion}
+                showsUserLocation={true}
+                showsMyLocationButton={true}
+                followsUserLocation={isTracking}
+                mapType="standard"
+              >
+                {/* Walking Path Polyline */}
+                {coordinates.length > 1 && (
+                  <Polyline
+                    coordinates={getPolylineCoordinates()}
+                    strokeColor="#2563eb"
+                    strokeWidth={4}
+                    lineDashPattern={[5, 5]}
+                  />
+                )}
+                
+                {/* Start Point Marker */}
+                {coordinates.length > 0 && (
+                  <Marker
+                    coordinate={{
+                      latitude: coordinates[0].lat,
+                      longitude: coordinates[0].lng
+                    }}
+                    title="Start Point"
+                    pinColor="green"
+                  />
+                )}
+                
+                {/* Current/End Point Marker */}
+                {currentLocation && (
+                  <Marker
+                    coordinate={{
+                      latitude: currentLocation.lat,
+                      longitude: currentLocation.lng
+                    }}
+                    title={isTracking ? "Current Position" : "End Point"}
+                    pinColor={isTracking ? "blue" : "red"}
+                  />
+                )}
+                
+                {/* Geofence Circle */}
+                {currentStep === 'completed' && coordinates.length > 0 && (
+                  <Circle
+                    center={{
+                      latitude: coordinates[0].lat,
+                      longitude: coordinates[0].lng
+                    }}
+                    radius={calculateRadius(coordinates)}
+                    strokeColor="rgba(37, 99, 235, 0.5)"
+                    fillColor="rgba(37, 99, 235, 0.1)"
+                  />
+                )}
+              </MapView>
+              
+              {/* Map Overlay Info */}
+              <View style={styles.mapOverlay}>
+                <View style={styles.mapInfo}>
+                  <Text style={styles.mapInfoText}>
+                    Timer: {formatTime(timer)}
+                  </Text>
+                  <Text style={styles.mapInfoText}>
+                    Points: {coordinates.length}
+                  </Text>
+                  {coordinates.length > 1 && (
+                    <Text style={styles.mapInfoText}>
+                      Distance: {pathStats.distance.toFixed(0)}m
+                    </Text>
+                  )}
+                  {currentStep === 'completed' && coordinates.length > 0 && (
+                    <Text style={styles.mapInfoText}>
+                      Radius: {calculateRadius(coordinates)}m
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {/* Status Banner */}
+              <View style={styles.statusBanner}>
+                {currentStep === 'map' && (
+                  <Text style={styles.statusText}>📍 Ready to start walking. Tap "Start Walking" to begin tracking.</Text>
+                )}
+                {currentStep === 'tracking' && (
+                  <Text style={styles.statusText}>🚶‍♂️ Walking... Your path is being tracked on the map!</Text>
+                )}
+                {currentStep === 'completed' && (
+                  <Text style={styles.statusText}>✅ Walking completed! Review your path and submit the data.</Text>
+                )}
+              </View>
+            </View>
+            
+            {/* Map Bottom Controls */}
+            <View style={styles.mapBottomControls}>
+              {currentStep === 'map' && (
+                <TouchableOpacity
+                  style={[styles.button, styles.startButton]}
+                  onPress={startWalking}
+                >
+                  <Text style={styles.buttonText}>▶️ Start Walking</Text>
+                </TouchableOpacity>
+              )}
+
+              {currentStep === 'tracking' && (
+                <TouchableOpacity
+                  style={[styles.button, styles.stopButton]}
+                  onPress={stopWalking}
+                >
+                  <Text style={styles.buttonText}>⏹️ Stop Walking</Text>
+                </TouchableOpacity>
+              )}
+
+              {currentStep === 'completed' && (
+                <View style={styles.completedControls}>
+                  <TouchableOpacity
+                    style={[styles.button, styles.submitButton, styles.flexButton]}
+                    onPress={submitData}
+                  >
+                    <Text style={styles.buttonText}>📤 Submit Data</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, styles.resetButton, styles.flexButton]}
+                    onPress={resetToSelection}
+                  >
+                    <Text style={styles.buttonText}>🔄 New Track</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </SafeAreaView>
+        </Modal>
+
+        {/* Submitted Data Modal */}
+        <Modal
+          visible={showDataModal}
+          animationType="slide"
+          onRequestClose={() => setShowDataModal(false)}
+        >
+          <SafeAreaView style={styles.modalContainer}>
+            <CustomHeader
+              title="Submitted Geofence Data"
+              onBackPress={() => setShowDataModal(false)}
+              showBackButton={true}
+              backgroundColor="#16a34a"
+            />
+            <ScrollView style={styles.modalContent}>
+              <Text style={styles.dataText}>
+                {JSON.stringify(submittedData, null, 2)}
+              </Text>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      </ImageBackground>
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -821,6 +879,12 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     textAlign: 'center',
     height: 180,
+  },
+    noDataText: {
+    textAlign: 'center',
+    color: '#6b7280',
+    fontStyle: 'italic',
+    marginBottom: 20,
   },
   // Android specific picker item styling
   pickerItemStyle: {
@@ -991,15 +1055,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     minWidth: 60,
   },
+    refreshButton: {
+    backgroundColor: '#059669',
+  },
 });
 
-export default GeofenceTracker;
+export default Home;
 
-function geofenceAreaRequest(geofenceData: GeofenceData): any {
-  throw new Error('Function not implemented.');
-}
-
-
-function connectionrequest() {
-  throw new Error('Function not implemented.');
-}

@@ -77,7 +77,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
 
 const styles = StyleSheet.create({
   headerContainer: {
-    height: Platform.OS === 'ios' ? 60 : 75,
+    height: Platform.OS === 'ios' ? 60 : 80,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -90,14 +90,17 @@ const styles = StyleSheet.create({
   leftSection: {
     flex: 1,
     alignItems: 'flex-start',
+    marginTop:10
   },
   centerSection: {
     flex: 2,
     alignItems: 'center',
+    marginTop:10
   },
   rightSection: {
     flex: 1,
     alignItems: 'flex-end',
+    marginTop:10
   },
   backButton: {
     paddingVertical: 8,
