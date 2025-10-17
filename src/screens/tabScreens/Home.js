@@ -37,11 +37,10 @@ const Home = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
-  
+  console.log('image>>>>>>>>', ProfileReducer?.userDetailsResponse?.photo);
 
   const isFocused = useIsFocused();
   const [addTaskModal, setAddTaskModal] = useState(false);
-  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
@@ -292,13 +291,6 @@ const Home = props => {
   }, []);
 
   useEffect(() => {
-    if (props?.route?.params?.finalImageUri) {
-      setCapturedImageWithGeotag(props.route.params.finalImageUri);
-      props?.navigation.setParams({ finalImageUri: undefined });
-    }
-  }, [props?.route?.params?.finalImageUri]);
-
-  useEffect(() => {
     if (isFocused) {
       connectionrequest()
         .then(() => {
@@ -377,7 +369,8 @@ const Home = props => {
         getLocation('inside', 'present');
       }
     } else {
-      setAddTaskModal(true);
+      // Alert.alert("Helllo")
+      getLocation('inside', 'present');
     }
   };
 
@@ -530,20 +523,12 @@ const Home = props => {
           </View>
 
           <View style={styles.imageContainer}>
-            {ProfileReducer?.attendenceStatusResponse?.check_out_photo ? (
+            {ProfileReducer?.userDetailsResponse?.photo ? (
               <Image
                 resizeMode="cover"
                 style={styles.userImage}
                 source={{
-                  uri: ProfileReducer.attendenceStatusResponse.check_out_photo,
-                }}
-              />
-            ) : ProfileReducer?.attendenceStatusResponse?.check_in_photo ? (
-              <Image
-                resizeMode="cover"
-                style={styles.userImage}
-                source={{
-                  uri: ProfileReducer.attendenceStatusResponse.check_in_photo,
+                  uri: ProfileReducer?.userDetailsResponse?.photo,
                 }}
               />
             ) : (
@@ -612,10 +597,6 @@ const Home = props => {
                   return 'Clock Out';
                 if (status === 'present' && is_attendance_given === 2)
                   return 'Clock Out';
-                if (status === 'pending' && is_attendance_given === 2)
-                  return 'Clock in pending...';
-                if (status === 'pending' && is_attendance_given === 3)
-                  return 'Clock in pending...';
                 if (status === 'present' && is_attendance_given === 3)
                   return 'Clock Out';
               })()}
@@ -662,7 +643,7 @@ const Home = props => {
                 width: normalize(50),
                 marginTop: -50,
               }}
-              source={Images.wb_logo}
+              source={Images.app_logo}
             />
 
             <Text
@@ -691,7 +672,7 @@ const Home = props => {
             >
               <Text style={styles.clockButtonText}>Office Duty</Text>
             </TouchableOpacity>
-
+            {/* 
             <TouchableOpacity
               style={[
                 styles.clockButton,
@@ -722,15 +703,15 @@ const Home = props => {
               <Text style={styles.clockButtonText}>
                 Official Visit Outside ULB Jurisdiction
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </ScrollView>
         </ImageBackground>
       </Modal>
 
-      <UpdateModal
+      {/* <UpdateModal
         isVisible={updateModalVisible}
         onClose={() => setUpdateModalVisible(false)}
-      />
+      /> */}
     </View>
   );
 };

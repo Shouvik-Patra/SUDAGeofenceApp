@@ -790,9 +790,10 @@ const DailyTask = props => {
           backgroundColor: Colors.skyblue,
           position: 'absolute',
           borderRadius: 100,
-          padding: normalize(20),
+          padding: normalize(15),
           right: 20,
           bottom: 150,
+          borderWidth:1,
         }}
         onPress={() => {
           if (
@@ -829,7 +830,7 @@ const DailyTask = props => {
         <Image
           resizeMode="contain"
           source={Images.addTask}
-          style={{ width: normalize(20), height: normalize(20) }}
+          style={{ width: normalize(20), height: normalize(20),tintColor:Colors.white }}
         />
       </TouchableOpacity>
 
@@ -877,7 +878,7 @@ const DailyTask = props => {
                 width: normalize(50),
                 marginTop: -50,
               }}
-              source={Images.wb_logo}
+              source={Images.app_logo}
             />
 
             <Text

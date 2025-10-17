@@ -31,18 +31,17 @@ const windowHeight = Dimensions.get('window').height;
 let status = '';
 const Signin = props => {
   const dispatch = useDispatch();
-    const isFocused = useIsFocused();
+  const isFocused = useIsFocused();
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState(''); //8013046678//
+  const [phone, setPhone] = useState('8961700942'); //8013046678//
   const [secure1, setSecure1] = useState(true);
-  const [password, setPassword] = useState(''); //
+  const [password, setPassword] = useState('12345678'); //
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   console.log('loading>>>>>>', loading);
-
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -138,22 +137,10 @@ const Signin = props => {
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-
-          // style={{
-          //   // paddingHorizontal: normalize(20),
-          //   maxHeight: windowHeight - normalize(220),
-          //   backgroundColor: '#FFF',
-          //   borderRadius: normalize(10),
-          //   padding: normalize(15),
-          //   flex: 1,
-          //   position: 'absolute',
-          //   bottom: '10%',
-          //   alignSelf: 'center',
-          //   width: '90%',
-          // }}
+       
           contentContainerStyle={{
             flexGrow: 1,
-            padding:15,
+            padding: 15,
             paddingBottom: isKeyboardVisible ? normalize(200) : normalize(20),
           }}
         >
@@ -164,44 +151,37 @@ const Signin = props => {
                 style={{
                   alignSelf: 'center',
                   height: normalize(100),
-                  width: normalize(100),
+                  width: normalize(200),
                   marginTop: -30,
                 }}
-                source={Images.wb_logo}
+                source={Images.app_logo}
               />
 
               <Text
                 style={[
                   styles.headerText2,
-                  { fontSize: 18, fontWeight: 'bold' },
+                  { fontSize: 20, fontWeight: 'bold' },
                 ]}
               >
-                State Urban Development Agency
+                With TECH We MAKE
               </Text>
               <Text style={styles.headerText2}>
-                Under Department of Urban Development & Municipal Affairs
+               “Please log in to continue”
               </Text>
-              <Text
-                style={[
-                  styles.headerText2,
-                  { fontSize: 16, fontWeight: 'bold' },
-                ]}
-              >
-                Government of West Bengal
-              </Text>
+             
             </View>
           </View>
 
           <View
             style={{
               width: '100%',
-              flex:1,
+              height: 450,
               alignSelf: 'center',
               backgroundColor: Colors.white,
               borderRadius: normalize(10),
               alignItems: 'center',
-              padding:15,
-              marginTop:15
+              padding: 15,
+              marginTop: 15,
             }}
           >
             <Text style={styles.headerText1}>Login</Text>
@@ -310,7 +290,7 @@ const styles = StyleSheet.create({
   headerText2: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: normalize(12),
-    color: Colors.fontWhite,
+    color: Colors.darkblue,
 
     textAlign: 'center',
   },

@@ -1,16 +1,21 @@
 import React from 'react';
-import { Text, Image, View, StyleSheet, Platform } from 'react-native';
+import {
+  Text,
+  Image,
+  View,
+  StyleSheet,
+  Platform,
+  TouchableOpacity,
+} from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Home from '../screens/tabScreens/Home';
 import MyProfile from '../screens/tabScreens/MyProfile';
 import { Colors, Images } from '../themes/ThemePath';
 import normalize from '../utils/helpers/normalize';
-import HolidayList from '../screens/tabScreens/HolidayList';
 import ActiveTask from '../screens/tabScreens/ActiveTask';
-import MuRegister from '../screens/tabScreens/MuRegister';
-import ProfileMuRegister from '../screens/tabScreens/ProfileMuRegister';
 import Leave from '../screens/tabScreens/Leave';
 import AttendenceReport from '../screens/tabScreens/AttendenceReport';
+import Svg, { Path } from 'react-native-svg';
 
 const Tab = createBottomTabNavigator();
 
@@ -26,88 +31,105 @@ const TabIcon = ({ focused, source }) => (
 
 const BottomTabNav = () => {
   return (
-   <Tab.Navigator
-          initialRouteName="Home"
-          screenOptions={{
-            unmountOnBlur: true,
-            tabBarHideOnKeyboard: true,
-            tabBarShowLabel: false,
-            headerShown: false,
-            tabBarStyle: styles.tabBarStyle,
-          }}>
+    <Tab.Navigator
+      initialRouteName="Home"
+      screenOptions={{
+        unmountOnBlur: true,
+        tabBarHideOnKeyboard: true,
+        tabBarShowLabel: false,
+        headerShown: false,
+        tabBarStyle: styles.tabBarStyle,
+        tabBarBackground: () => (
+          <View style={styles.tabBarBackground}>
+            <Svg
+              width="100%"
+              height="100%"
+              style={styles.svgCurve}
+              viewBox="0 0 400 85"
+              preserveAspectRatio="none"
+            >
+              <Path
+                d="M0,20 Q0,0 20,0 L130,0 Q150,0 160,18 C170,28 180,35 200,35 C220,35 230,28 240,18 Q250,0 270,0 L380,0 Q400,0 400,20 L400,85 L0,85 Z"
+                fill={Colors.skyblue}
+              />
+            </Svg>
+          </View>
+        ),
+      }}
+    >
+      <Tab.Screen
+        name="AttendenceReport"
+        component={AttendenceReport}
+        listeners={({ navigation }) => ({
+          blur: () => navigation.setParams({ screen: undefined }),
+        })}
+        options={{
+          unmountOnBlur: true,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={Images.tab6} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Leave"
+        component={Leave}
+        options={{
+          unmountOnBlur: true,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={Images.tab2} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Home"
+        component={Home}
+        options={{
+          unmountOnBlur: true,
+          tabBarIcon: ({ focused }) => (
+            <View style={styles.floatingButtonWrapper}>
+              <View style={styles.floatingButton}>
+                <View style={styles.floatingButtonInner}>
+                  <Image
+                    style={{
+                      height: normalize(30),
+                      width: normalize(30),
+                      tintColor:focused ? Colors.red :Colors.white,
+                    }}
+                    source={Images.tab1}
+                    resizeMode="cover"
+                  />
+                </View>
+              </View>
+            </View>
+          ),
+        }}
+      />
 
-          <Tab.Screen
-            name="Home"
-            component={Home}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab1} />
-              ),
-            }}
-          />
-          {/* <Tab.Screen
-            name="MuRegister"
-            component={MuRegister}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab5} />
-              ),
-            }}
-          /> */}
-          <Tab.Screen
-            name="Leave"
-            component={Leave}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab2} />
-              ),
-            }}
-          />
+      <Tab.Screen
+        name="ActiveTask"
+        component={ActiveTask}
+        options={{
+          unmountOnBlur: true,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={Images.tab3} />
+          ),
+        }}
+      />
 
-
-          <Tab.Screen
-            name="ActiveTask"
-            component={ActiveTask}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab3} />
-              ),
-            }}
-          />
-         
-
-          <Tab.Screen
-            name="AttendenceReport"
-            component={AttendenceReport}
-            listeners={({ navigation }) => ({
-              blur: () => navigation.setParams({ screen: undefined }),
-            })}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab6} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="MyProfile"
-            component={MyProfile}
-            listeners={({ navigation }) => ({
-              blur: () => navigation.setParams({ screen: undefined }),
-            })}
-            options={{
-              unmountOnBlur: true,
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} source={Images.tab4} />
-              ),
-            }}
-          />
-
-        </Tab.Navigator>
+      <Tab.Screen
+        name="MyProfile"
+        component={MyProfile}
+        listeners={({ navigation }) => ({
+          blur: () => navigation.setParams({ screen: undefined }),
+        })}
+        options={{
+          unmountOnBlur: true,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} source={Images.tab4} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 };
 
@@ -119,7 +141,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.skyblue,
+    backgroundColor: 'transparent',
     borderTopRightRadius: normalize(20),
     borderTopLeftRadius: normalize(20),
     height: normalize(85),
@@ -135,6 +157,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 5,
     elevation: 5,
+  },
+  tabBarBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    borderTopRightRadius: normalize(20),
+    borderTopLeftRadius: normalize(20),
+  },
+  svgCurve: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
   tabIconContainer: {
     alignItems: 'center',
@@ -155,5 +193,35 @@ const styles = StyleSheet.create({
   },
   focusedIcon: {
     tintColor: Colors.red,
+  },
+  floatingButtonWrapper: {
+    top: normalize(-25),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  floatingButton: {
+    width: normalize(70),
+    height: normalize(70),
+    borderRadius: normalize(35),
+    backgroundColor: Colors.skyblue,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.white,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: normalize(2),
+    borderColor: Colors.white,
+  },
+  floatingButtonInner: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: normalize(35),
   },
 });

@@ -437,7 +437,7 @@ const MyProfile = props => {
               <TouchableOpacity
                 style={[
                   styles.editButton,
-                  { marginTop: normalize(10), backgroundColor: Colors.orange },
+                  { marginTop: normalize(10), backgroundColor: Colors.orange ,marginBottom:100},
                 ]}
                 onPress={() => {
                   dispatch(logoutRequest());

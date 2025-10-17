@@ -474,7 +474,7 @@ const ApplyLeave = () => {
             placeholder={'Reason'}
             placeholderTextColor={Colors.black}
             paddingLeft={normalize(25)}
-            borderColor={Colors.inputGreyBorder}
+            borderColor={Colors.white}
             borderRadius={normalize(5)}
             editable={true}
             fontFamily={Fonts.MulishRegular}
@@ -483,7 +483,7 @@ const ApplyLeave = () => {
             fontSize={normalize(14)}
             headertxtsize={normalize(13)}
             onChangeText={setReason}
-            tintColor={Colors.tintGrey}
+            tintColor={Colors.white}
             multiline={true}
             maxLength={500}
           />
@@ -533,7 +533,7 @@ const ApplyLeave = () => {
         <TouchableOpacity
           style={[
             styles.submitButton,
-            isSubmitting && styles.submitButtonDisabled,
+            isSubmitting && styles.submitButtonDisabled,{marginBottom:100}
           ]}
           onPress={() => {
             handleSubmit();
