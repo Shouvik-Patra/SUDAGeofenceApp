@@ -747,51 +747,7 @@ const AttendenceReport = props => {
           onRefresh={onRefresh}
         />
       </ScrollView>
-      {/* <TouchableOpacity
-        style={{
-          backgroundColor: Colors.skyblue,
-          position: 'absolute',
-          borderRadius: 100,
-          padding: normalize(20),
-          right: 20,
-          bottom: 250,
-        }}
-        onPress={() => {
-          if (
-            (ProfileReducer?.attendenceStatusResponse
-              ?.attendance_status_text === 'Clocked In Other' &&
-              ProfileReducer?.attendenceStatusResponse?.status === 'pending') ||
-            ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 0
-          ) {
-            Alert.alert(
-              'You are not allowed to add daily task.',
-              ProfileReducer?.attendenceStatusResponse?.is_attendance_given == 0
-                ? 'Please Clock in first'
-                : 'Please ask for Approval',
-            );
-          } else if (
-            ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
-              'Clocked Out Outside' ||
-            ProfileReducer?.attendenceStatusResponse?.attendance_status_text ===
-              'Clocked Out Inside' ||
-            ProfileReducer?.attendenceStatusResponse?.is_attendence_allowed ===
-              false
-          ) {
-            Alert.alert(
-              'You are not allowed to add daily task.',
-              'You already clocked Out',
-            );
-          } else {
-            setAddTaskModal(true);
-          }
-        }}
-      >
-        <Image
-          resizeMode="contain"
-          source={Images.addTask}
-          style={{ width: normalize(20), height: normalize(20) }}
-        />
-      </TouchableOpacity> */}
+      
       <TouchableOpacity
         style={{
           backgroundColor: Colors.skyblue,
@@ -961,7 +917,7 @@ const AttendenceReport = props => {
       >
         <ImageBackground
           resizeMode="stretch"
-          source={Images.pageBackground}
+          source={Images.drawerbg}
           style={styles.modalContainer}
         >
           <ScrollView
@@ -981,7 +937,7 @@ const AttendenceReport = props => {
               />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>Add new task</Text>
+            <Text style={styles.modalTitle}>Add New Task</Text>
 
             <Text style={styles.fieldLabel}>
               Describe where are you visiting
@@ -1177,7 +1133,6 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     backgroundColor: Colors.bgColor,
-    paddingHorizontal: 10,
   },
   mainContainer: {
     flex: 1,
