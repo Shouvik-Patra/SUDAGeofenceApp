@@ -2,17 +2,19 @@ import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
-import Toast from 'react-native-toast-message';
+
 
 import { Alert } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import Splash from '../screens/splash/Splash';
 import BottomTabNav from './BottomTabNav';
 import Signin from '../screens/authScreens/Signin';
-import Attendence from '../screens/tabScreens/Attendance';
+import Geotracking from '../screens/mainScreen/Geotracking';
+import GeofencedAreaList from '../screens/mainScreen/GeofencedAreaList';
 const Stack = createStackNavigator();
 export default function StackNav() {
   const AuthReducer = useSelector(state => state.AuthReducer);
+  console.log('mainstack>>>>', AuthReducer.getTokenResponse);
 
   const dispatch = useDispatch();
 
@@ -21,7 +23,8 @@ export default function StackNav() {
   };
   const mainScreens = {
     BottomTabNav: BottomTabNav,
-    Attendence:Attendence
+    Geotracking:Geotracking,
+    GeofencedAreaList:GeofencedAreaList
   };
   if (AuthReducer?.isLoading) {
     return <Splash />;
@@ -45,7 +48,7 @@ export default function StackNav() {
             })}
           </Stack.Navigator>
         )}
-        <Toast />
+     
       </NavigationContainer>
     );
   }

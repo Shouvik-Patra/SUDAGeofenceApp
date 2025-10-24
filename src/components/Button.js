@@ -23,12 +23,11 @@ export default function Button(props) {
   return (
     <TouchableOpacity
       activeOpacity={0.6}
-      disabled={props.disabled}
       style={{
         height: props.height,
-        width: props.width,
-        borderRadius: normalize(8),
-        backgroundColor: props.backgroundColor,
+        width: '100%',
+        borderRadius: normalize(10),
+        backgroundColor: Colors.green,
         justifyContent: props.justifyContent,
         alignItems: 'center',
         alignSelf: props.alignSelf,
@@ -47,7 +46,7 @@ export default function Button(props) {
         paddingVertical: normalize(10),
         minWidth: props.minWidth,
         top: props.btntop,
-        marginVertical: props.btnmarginVertical,
+        marginVertical: props.btnmarginVertical
       }}
       onPress={() => {
         onPress();

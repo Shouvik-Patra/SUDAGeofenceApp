@@ -11,10 +11,10 @@ import {
 } from '../reducer/AuthReducer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import constants from '../../utils/helpers/constants';
-import ShowMessage from '../../utils/helpers/ShowMessage';
 export function* getTokenSaga() {
   try {
     const response = yield call(AsyncStorage.getItem, constants.TOKEN);
+    console.log(response);
     if (response != null) {
       yield put(getTokenSuccess(response));
       console.log('TOKEN===--->', response);
@@ -34,23 +34,18 @@ export function* signinSaga(action) {
   try {
     let response = yield call(
       postApi,
-      'employee-login-emp',
+      'park/login',
       action.payload,
       header,
     );
+    console.log('response', response);
     if (response?.data?.meta?.code == 200) {
       yield put(signInSuccess(response?.data?.data));
-      ShowMessage(response?.data?.meta?.message, 'success');
-
-      yield call(
-        AsyncStorage.setItem,
-        constants.TOKEN,
-        response?.data?.data?.access_token,
-      );
+      yield call(AsyncStorage.setItem, constants.TOKEN, response?.data?.data?.access_token);
       yield put(getTokenSuccess(response?.data?.data?.access_token));
     } else {
       yield put(signInFailure(response?.data?.data));
-      ShowMessage(response?.data?.meta?.message, 'error');
+      showErrorAlert(response?.data?.meta?.message);
     }
   } catch (error) {
     // Toast('Something went wrong')

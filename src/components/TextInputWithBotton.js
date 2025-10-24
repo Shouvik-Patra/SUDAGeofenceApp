@@ -52,7 +52,7 @@ export default function TextInputWithButton(props) {
           borderRadius: props.borderRadius,
           alignItems: 'flex-start',
           justifyContent: 'center',
-          borderColor: Colors.lightBlue,
+          borderColor: Colors.green,
           borderWidth: normalize(1),
           marginTop: props.marginTop,
           width: props.inputWidth,

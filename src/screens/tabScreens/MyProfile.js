@@ -9,9 +9,7 @@ import {
   ScrollView,
   Alert,
   Platform,
-  Modal,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import Header from '../../components/Header';
 import { Colors, Fonts, Images } from '../../themes/ThemePath';
@@ -23,175 +21,60 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logoutRequest } from '../../redux/reducer/AuthReducer';
 import {
   profileUpdateRequest,
-  resetPasswordRequest,
   userDetailsRequest,
 } from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
 import TextInputWithButton from '../../components/TextInputWithBotton';
-
 let status = '';
-
 const MyProfile = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+
   const isFocused = useIsFocused();
-
-  // Initialize state with userDetailsResponse data
-  const userDetails = ProfileReducer?.userDetailsResponse || {};
-
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState(userDetails?.name || '');
-  const [email, setEmail] = useState(userDetails?.email || '');
-  const [phone, setPhone] = useState(userDetails?.phone || '');
-  const [dob, setDob] = useState(userDetails?.dob || '');
-  const [dobDate, setDobDate] = useState(
-    userDetails?.dob ? new Date(userDetails?.dob) : new Date(),
-  );
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [address, setAddress] = useState(userDetails?.address || '');
-  const [municipality, setMunicipality] = useState(
-    userDetails?.municipality || '',
-  );
-  const [ward, setWard] = useState(userDetails?.ward || '');
-  const [district, setDistrict] = useState(userDetails?.district || '');
-  const [designation, setDesignation] = useState(
-    userDetails?.designation || '',
-  );
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
-
-  console.log('isEditing>>', isEditing);
-
+  const [name, setName] = useState(AuthReducer?.signinResponse?.name);
+  const [email, setEmail] = useState(AuthReducer?.signinResponse?.phone);
+  const [phone, setPhone] = useState(AuthReducer?.signinResponse?.municipality_name);
+  const [address, setAddress] = useState('');
+  const [isEditing, setIsEditing] = useState(props?.route?.params?.isEditing || false);
   const [loading, setLoading] = useState(false);
-  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(
-    userDetails?.photo || null,
-  );
 
-  useEffect(() => {
-    getuserDetails();
-  }, [isFocused]);
-  // Update state when userDetailsResponse changes
-  useEffect(() => {
-    if (ProfileReducer?.userDetailsResponse) {
-      const details = ProfileReducer.userDetailsResponse;
-      setName(details?.name || '');
-      setEmail(details?.email || '');
-      setPhone(details?.phone || '');
-      setDob(details?.dob || '');
-      setDobDate(details?.dob ? new Date(details?.dob) : new Date());
-      setAddress(details?.address || '');
-      setMunicipality(details?.municipality || '');
-      setWard(details?.ward || '');
-      setDistrict(details?.district || '');
-      setDesignation(details?.designation || '');
-      // setCapturedImageWithGeotag(details?.photo || null);
-    }
-  }, [ProfileReducer?.userDetailsResponse]);
+  const [profile, setProfile] = useState();
+  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
 
-  // Listen for the returned image from Attendance page
-  useEffect(() => {
-    if (props?.route?.params?.finalImageUri) {
-      setCapturedImageWithGeotag(props.route.params.finalImageUri);
-      props?.navigation.setParams({ finalImageUri: undefined });
-    }
-  }, [props?.route?.params?.finalImageUri]);
+  const [editedProfile, setEditedProfile] = useState({ ...profile });
 
   const handleEdit = () => {
+    // setEditedProfile({ ...profile });
     setIsEditing(true);
   };
 
-  const openResetPasswordModal = () => {
-    setShowResetPasswordModal(true);
-    setPassword('');
-    setConfirmPassword('');
-  };
-
-  const closeResetPasswordModal = () => {
-    setShowResetPasswordModal(false);
-    setPassword('');
-    setConfirmPassword('');
-  };
-
-  const handleResetPassword = async () => {
-    if (password != confirmPassword) {
-      showErrorAlert('confirm password does not match');
-    } else if (password.length < 6) {
-      showErrorAlert('Password must be at least 6 characters long');
-    } else {
-      let obj = {
-        id: ProfileReducer?.userDetailsResponse?.id,
-        new_password: password,
-        confirm_password: confirmPassword,
-      };
-
-      connectionrequest()
-        .then(() => {
-          console.log(obj);
-          dispatch(resetPasswordRequest(obj));
-          closeResetPasswordModal();
-        })
-        .catch(err => {
-          console.log(err);
-          showErrorAlert('Please connect to internet');
-        });
-    }
-  };
-
   const handleCancel = () => {
+    // setEditedProfile({ ...profile });
     setIsEditing(false);
-    // Reset to original values
-    const details = ProfileReducer?.userDetailsResponse || {};
-    setName(details?.name || '');
-    setEmail(details?.email || '');
-    setPhone(details?.phone || '');
-    setDob(details?.dob || '');
-    setDobDate(details?.dob ? new Date(details?.dob) : new Date());
-    setAddress(details?.address || '');
-    setMunicipality(details?.municipality || '');
-    setWard(details?.ward || '');
-    setDistrict(details?.district || '');
-    setDesignation(details?.designation || '');
-
-    setCapturedImageWithGeotag(details?.photo || null);
-    setShowDatePicker(false);
   };
 
-  const handleClickPhoto = () => {
-    props?.navigation.navigate('Attendence', {
-      pagename: 'MyProfile',
-    });
-  };
 
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || dobDate;
-    setShowDatePicker(Platform.OS === 'ios');
-    setDobDate(currentDate);
-
-    // Format date to YYYY-MM-DD for API
-    const formattedDate = currentDate.toISOString().split('T')[0];
-    setDob(formattedDate);
-  };
-
-  const showDatepicker = () => {
-    setShowDatePicker(true);
-  };
 
   function onUpdateProfile() {
     const imageName = capturedImageWithGeotag?.split('/').pop(); // extract file name
-    const imageType = 'image/jpeg';
+    const imageType = 'image/jpeg'; // or dynamically detect
+
+    // let obj = {
+    //   name: 'Shouvik Patra',
+    //   email: 'shouvik@yopmail.com',
+    //   photo: capturedImageWithGeotag ? capturedImageWithGeotag : null,
+    // };
     const formData = new FormData();
     formData.append('name', name);
     formData.append('email', email);
-    formData.append('dob', dob);
+    formData.append('address', address);
     formData.append('photo', {
       uri:
         Platform.OS === 'android'
           ? capturedImageWithGeotag
-          : capturedImageWithGeotag.replace('file://', ''),
+          : capturedImageWithGeotag?.replace('file://', ''),
       name: imageName,
       type: imageType,
     });
@@ -201,16 +84,17 @@ const MyProfile = props => {
         dispatch(profileUpdateRequest(formData));
       })
       .catch(err => {
+        console.log(err);
         showErrorAlert('Please connect to internet');
       });
   }
-
-  function getuserDetails() {
+  function userDetails() {
     connectionrequest()
       .then(() => {
         dispatch(userDetailsRequest());
       })
       .catch(err => {
+        console.log(err);
         showErrorAlert('Please connect to internet');
       });
   }
@@ -219,33 +103,33 @@ const MyProfile = props => {
     switch (ProfileReducer.status) {
       case 'Profile/userDetailsRequest':
         status = ProfileReducer.status;
-        setLoading(true);
+        setLoading(true)
         break;
       case 'Profile/userDetailsSuccess':
         status = ProfileReducer.status;
-        setLoading(false);
+        setLoading(false)
         break;
       case 'Profile/userDetailsFailure':
         status = ProfileReducer.status;
-        setLoading(false);
+        setLoading(false)
         break;
+
       case 'Profile/profileUpdateRequest':
         status = ProfileReducer.status;
-        setLoading(true);
+        setLoading(true)
         break;
       case 'Profile/profileUpdateSuccess':
         status = ProfileReducer.status;
-        setLoading(false);
-        setIsEditing(false);
-        getuserDetails();
+        setLoading(false)
+        userDetails();
         break;
       case 'Profile/profileUpdateFailure':
         status = ProfileReducer.status;
-        setIsEditing(false);
-        setLoading(false);
+        setLoading(false)
         break;
     }
   }
+ 
 
   return (
     <View
@@ -261,7 +145,7 @@ const MyProfile = props => {
         Title
         placeText={'My Profile'}
         onPress_back_button={() => {
-          props.navigation.goBack();
+          setModalVisible(true);
         }}
         onPress_right_button={() => {
           props.navigation.navigate('Notification');
@@ -279,26 +163,32 @@ const MyProfile = props => {
             style={styles.profileImageContainer}
             disabled={!isEditing}
           >
-            {capturedImageWithGeotag ? (
+            {ProfileReducer?.userDetailsResponse?.photo ? (
               <Image
                 resizeMode="cover"
                 style={styles.profileImage}
-                source={{ uri: capturedImageWithGeotag }}
+                source={{ uri: ProfileReducer?.userDetailsResponse?.photo }}
               />
             ) : (
-              <Image source={Images.profilepic} style={styles.profileImage} />
+              <Image
+                source={{uri:capturedImageWithGeotag}}
+                style={styles.profileImage}
+              />
             )}
 
-            {isEditing && (
+            {isEditing  || props?.route?.params?.isEditing && (
               <View style={styles.editImageOverlay}>
                 <Text style={styles.editImageText}>Tap to change</Text>
               </View>
             )}
           </TouchableOpacity>
-          <Text style={styles.headerName}>{name || 'User Name'}</Text>
+          <Text style={styles.headerName}>
+            {ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name :""}
+          </Text>
         </View>
 
-        {isEditing ? (
+      
+        {isEditing ?
           <View style={styles.content}>
             <TextInputWithButton
               show={true}
@@ -344,69 +234,45 @@ const MyProfile = props => {
               onChangeText={e => setEmail(e)}
               tintColor={Colors.tintGrey}
             />
-            <View style={styles.datePickerContainer}>
-              <Text style={styles.datePickerLabel}>Date of Birth</Text>
-              <TouchableOpacity
-                style={styles.datePickerButton}
-                onPress={showDatepicker}
-              >
-                <Text style={styles.datePickerText}>
-                  {dob ? dob : 'Select Date of Birth'}
-                </Text>
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  testID="dateTimePicker"
-                  value={dobDate}
-                  mode="date"
-                  display="default"
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
-                />
-              )}
-            </View>
+            <TextInputWithButton
+              show={true}
+              icon={true}
+              height={normalize(45)}
+              inputWidth={'100%'}
+              marginTop={normalize(25)}
+              textColor={Colors.textInputColor}
+              InputHeaderText={'Address'}
+              placeholder={'Enter Address'}
+              placeholderTextColor={Colors.black}
+              paddingLeft={normalize(25)}
+              borderColor={Colors.inputGreyBorder}
+              borderRadius={normalize(5)}
+              editable={true}
+              fontFamily={Fonts.MulishRegular}
+              isheadertext={true}
+              value={address}
+              fontSize={normalize(14)}
+              headertxtsize={normalize(13)}
+              onChangeText={e => setAddress(e)}
+              tintColor={Colors.tintGrey}
+            />
+           
           </View>
-        ) : (
+          :
           <View style={styles.content}>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Name</Text>
-              <Text style={styles.fieldValue}>{name || 'Not provided'}</Text>
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              <Text style={styles.fieldValue}>{email || 'Not provided'}</Text>
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Phone</Text>
-              <Text style={styles.fieldValue}>{phone || 'Not provided'}</Text>
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Date of Birth</Text>
-              <Text style={styles.fieldValue}>{dob || 'Not provided'}</Text>
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Municipality</Text>
-              <Text style={styles.fieldValue}>
-                {municipality || 'Not provided'}
-              </Text>
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Designation</Text>
-              <Text style={styles.fieldValue}>
-                {designation || 'Not provided'}
-              </Text>
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>District</Text>
-              <Text style={styles.fieldValue}>
-                {district || 'Not provided'}
-              </Text>
-            </View>
-          </View>
-        )}
+            <Text style={styles.fieldValue}>
+              {name}
+            </Text>
+            <Text style={styles.fieldValue}>
+              {phone}
+            </Text>
+            <Text style={styles.fieldValue}>
+              {email}
+            </Text>
+          </View>}
 
         <View style={styles.buttonContainer}>
-          {isEditing ? (
+          {isEditing  ? (
             <View style={styles.editButtonsContainer}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -425,19 +291,13 @@ const MyProfile = props => {
             </View>
           ) : (
             <>
-              <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+              {/* <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
                 <Text style={styles.editButtonText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[
-                  styles.editButton,
-                  { marginTop: normalize(10), backgroundColor: Colors.lightred },
-                ]} onPress={openResetPasswordModal}>
-                <Text style={styles.editButtonText}>Reset Password</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <TouchableOpacity
                 style={[
                   styles.editButton,
-                  { marginTop: normalize(10), backgroundColor: Colors.orange ,marginBottom:100},
+                  { marginTop: normalize(10), backgroundColor: Colors.orange },
                 ]}
                 onPress={() => {
                   dispatch(logoutRequest());
@@ -449,93 +309,6 @@ const MyProfile = props => {
           )}
         </View>
       </ScrollView>
-
-      {/* Reset Password Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showResetPasswordModal}
-        onRequestClose={closeResetPasswordModal}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Reset Password</Text>
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={closeResetPasswordModal}
-              >
-                <Text style={styles.modalCloseText}>×</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.modalContent}>
-              <TextInputWithButton
-                show={true}
-                icon={true}
-                height={normalize(45)}
-                inputWidth={'100%'}
-                marginTop={normalize(15)}
-                textColor={Colors.textInputColor}
-                InputHeaderText={'New Password'}
-                placeholder={'Enter new password'}
-                placeholderTextColor={Colors.black}
-                paddingLeft={normalize(15)}
-                borderColor={Colors.inputGreyBorder}
-                borderRadius={normalize(5)}
-                editable={true}
-                fontFamily={Fonts.MulishRegular}
-                isheadertext={true}
-                value={password}
-                fontSize={normalize(14)}
-                headertxtsize={normalize(13)}
-                onChangeText={e => setPassword(e)}
-                tintColor={Colors.tintGrey}
-                secureTextEntry={true}
-              />
-              
-              <TextInputWithButton
-                show={true}
-                icon={true}
-                height={normalize(45)}
-                inputWidth={'100%'}
-                marginTop={normalize(15)}
-                textColor={Colors.textInputColor}
-                InputHeaderText={'Confirm Password'}
-                placeholder={'Confirm new password'}
-                placeholderTextColor={Colors.black}
-                paddingLeft={normalize(15)}
-                borderColor={Colors.inputGreyBorder}
-                borderRadius={normalize(5)}
-                editable={true}
-                fontFamily={Fonts.MulishRegular}
-                isheadertext={true}
-                value={confirmPassword}
-                fontSize={normalize(14)}
-                headertxtsize={normalize(13)}
-                onChangeText={e => setConfirmPassword(e)}
-                tintColor={Colors.tintGrey}
-                secureTextEntry={true}
-              />
-            </View>
-            
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={closeResetPasswordModal}
-              >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSubmitButton}
-                onPress={handleResetPassword}
-              >
-                <Text style={styles.modalSubmitButtonText}>Submit</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -553,10 +326,13 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scrollViewContent: {
-    paddingBottom: normalize(100),
+    // paddingHorizontal: normalize(10),
+    // paddingVertical: normalize(10),
+    paddingBottom: normalize(100), // Extra padding at bottom
   },
   header: {
     alignItems: 'center',
+    // backgroundColor: '#fff',
     paddingVertical: 30,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
@@ -606,13 +382,13 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   fieldContainer: {
-    marginBottom: 15,
+    marginBottom: 20,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: '#666',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   fieldValue: {
     fontSize: 16,
@@ -623,6 +399,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+    marginTop: 15
+  },
+  nonEditableField: {
+    backgroundColor: '#f0f0f0',
+    color: '#888',
+  },
+  input: {
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  multilineInput: {
+    height: 80,
+    textAlignVertical: 'top',
   },
   buttonContainer: {
     padding: 20,
@@ -664,106 +459,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  datePickerContainer: {
-    marginTop: normalize(25),
-  },
-  datePickerLabel: {
-    fontSize: normalize(13),
-    color: Colors.textInputColor,
-    marginBottom: normalize(5),
-    fontFamily: Fonts.MulishRegular,
-  },
-  datePickerButton: {
-    height: normalize(45),
-    borderWidth: 1,
-    borderColor: Colors.skyblue,
-    borderRadius: normalize(5),
-    paddingLeft: normalize(10),
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-  },
-  datePickerText: {
-    fontSize: normalize(14),
-    color: Colors.textInputColor,
-    fontFamily: Fonts.MulishRegular,
-  },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 0,
-    width: '90%',
-    maxWidth: 400,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  modalCloseButton: {
-    padding: 5,
-  },
-  modalCloseText: {
-    fontSize: 24,
-    color: '#666',
-    fontWeight: 'bold',
-  },
-  modalContent: {
-    padding: 20,
-  },
-  modalButtonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    paddingTop: 10,
-  },
-  modalCancelButton: {
-    backgroundColor: '#f44336',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    flex: 0.45,
-    alignItems: 'center',
-  },
-  modalCancelButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  modalSubmitButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
-    flex: 0.45,
-    alignItems: 'center',
-  },
-  modalSubmitButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',

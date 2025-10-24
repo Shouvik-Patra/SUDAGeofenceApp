@@ -4,7 +4,6 @@ import {
   ImageBackground,
   Keyboard,
   KeyboardAvoidingView,
-  PermissionsAndroid,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -22,26 +21,19 @@ import showErrorAlert from '../../utils/helpers/Toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { signInRequest } from '../../redux/reducer/AuthReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
-import ShowMessage from '../../utils/helpers/ShowMessage';
-import constants from '../../utils/helpers/constants';
-import UpdateModal from '../../components/UpdateModal';
-import { Camera } from 'react-native-vision-camera';
-import { useIsFocused } from '@react-navigation/native';
 const windowHeight = Dimensions.get('window').height;
 let status = '';
 const Signin = props => {
   const dispatch = useDispatch();
-  const isFocused = useIsFocused();
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState('8961700942'); //8013046678//
-  const [secure1, setSecure1] = useState(true);
-  const [password, setPassword] = useState('12345678'); //
+  const [phone, setPhone] = useState('shouvikpatra');
+  const [secure1, setSecure1] = useState(false);
+  const [password, setPassword] = useState('123456');
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  console.log('loading>>>>>>', loading);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -62,32 +54,9 @@ const Signin = props => {
       keyboardDidShowListener.remove();
     };
   }, []);
-  const requestLocationPermission = async () => {
-    try {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message: 'This app requires access to your location.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
 
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      }
-      return true; // iOS case
-    } catch (err) {
-      console.warn(err);
-      return false;
-    }
-  };
-  useEffect(() => {
-    requestLocationPermission();
-  }, []);
   const employeeLogin = () => {
+    global.user_type ='admin'
     setLoading(true);
     if (phone === '') {
       showErrorAlert('Please Enter username');
@@ -97,8 +66,8 @@ const Signin = props => {
       let obj = {
         username: phone.trim(),
         password: password,
-        app_version: constants.APP_VERSION,
       };
+      console.log('objobjobjobjobj', obj);
       connectionrequest()
         .then(() => {
           dispatch(signInRequest(obj));
@@ -116,7 +85,7 @@ const Signin = props => {
       case 'Auth/signInSuccess':
         status = AuthReducer.status;
         setLoading(false);
-
+        props.navigation.navigate('BottomTabNav');
         break;
       case 'Auth/signInFailure':
         status = AuthReducer.status;
@@ -126,135 +95,142 @@ const Signin = props => {
   }
   return (
     <ImageBackground
-      source={Images.pageBackground}
+      source={Images.appBG}
       resizeMode="cover"
       style={styles.onbordingStyle}
     >
-      <Loader visible={AuthReducer?.status == 'Auth/signInRequest'} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS == 'ios' ? 'padding' : 'height'}
-      >
+      <Loader visible={loading} />
+      <SafeAreaView style={{ flex: 1, width: '100%' }}>
+        <View style={{ width: '100%', paddingHorizontal: normalize(10) }}>
+          <View style={styles.headerContain}>
+            <Image
+              resizeMode="contain"
+              style={{
+                alignSelf: 'center',
+                height: normalize(100),
+                width: normalize(100),
+                marginTop:-30
+              }}
+              source={Images.wblogo}
+            />
+
+            <Text style={[styles.headerText2,{fontSize:18,fontWeight:'bold'}]}>
+              State Urban Development Agency
+            </Text>
+            <Text style={styles.headerText2}>
+              Under Department of Urban Development & Municipal Affairs
+            </Text>
+            <Text style={[styles.headerText2,{fontSize:16,fontWeight:'bold'}]}>Government of West Bengal</Text>
+          </View>
+        </View>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
-       
+          style={{
+            // paddingHorizontal: normalize(20),
+            maxHeight: windowHeight - normalize(200),
+            backgroundColor: '#FFF',
+            borderRadius: normalize(10),
+            borderWidth:2,
+            borderColor:Colors.green,
+            padding: normalize(15),
+            flex: 1,
+            position: 'absolute',
+            bottom: '10%',
+            alignSelf: 'center',
+            width: '90%',
+          }}
           contentContainerStyle={{
             flexGrow: 1,
-            padding: 15,
             paddingBottom: isKeyboardVisible ? normalize(200) : normalize(20),
           }}
         >
-          <View style={{ width: '100%', paddingHorizontal: normalize(10) }}>
-            <View style={styles.headerContain}>
-              <Image
-                resizeMode="contain"
-                style={{
-                  alignSelf: 'center',
-                  height: normalize(100),
-                  width: normalize(200),
-                  marginTop: -30,
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS == 'ios' ? 'padding' : 'height'}
+          >
+            <View
+              style={{
+                width: '100%',
+                height: normalize(350),
+                alignSelf: 'center',
+                backgroundColor: Colors.white,
+                borderRadius: normalize(10),
+                alignItems: 'center',
+              }}
+            >
+              <Text style={styles.headerText1}>Login</Text>
+              <TextInputWithButton
+                show={true}
+                icon={true}
+                height={normalize(45)}
+                inputWidth={'100%'}
+                marginTop={normalize(25)}
+                textColor={Colors.textInputColor}
+                InputHeaderText={'User Name'}
+                placeholder={'Enter username'}
+                placeholderTextColor={Colors.black}
+                paddingLeft={normalize(25)}
+                borderColor={Colors.inputGreyBorder}
+                borderRadius={normalize(5)}
+                editable={true}
+                fontFamily={Fonts.MulishRegular}
+                isheadertext={true}
+                value={phone}
+                fontSize={normalize(14)}
+                headertxtsize={normalize(13)}
+                onChangeText={e => setPhone(e)}
+                tintColor={Colors.tintGrey}
+              />
+              <TextInputWithButton
+                show={true}
+                icon={true}
+                height={normalize(45)}
+                inputWidth={'100%'}
+                marginTop={normalize(25)}
+                textColor={Colors.textInputColor}
+                InputHeaderText={'New Password'}
+                placeholder={'Enter password'}
+                keyboardType={'email'}
+                placeholderTextColor={Colors.black}
+                paddingLeft={normalize(25)}
+                borderColor={Colors.inputGreyBorder}
+                borderRadius={normalize(5)}
+                editable={true}
+                fontFamily={Fonts.MulishRegular}
+                isheadertext={true}
+                value={password}
+                fontSize={normalize(14)}
+                headertxtsize={normalize(13)}
+                onChangeText={e => setPassword(e)}
+                isRightIconVisible
+                rightimage={Images.eyeclose}
+                rightimageheight={normalize(15)}
+                rightimagewidth={normalize(15)}
+                tintColor={Colors.tintGrey}
+                secureTextEntry={secure1}
+                onRightPress={() => {
+                  setSecure1(!secure1);
                 }}
-                source={Images.app_logo}
               />
 
-              <Text
-                style={[
-                  styles.headerText2,
-                  { fontSize: 20, fontWeight: 'bold' },
-                ]}
-              >
-                With TECH We MAKE
-              </Text>
-              <Text style={styles.headerText2}>
-               “Please log in to continue”
-              </Text>
-             
+              <Button
+                height={normalize(45)}
+                marginTop={normalize(25)}
+                borderRadius={normalize(10)}
+                backgroundColor={Colors.button}
+                title={'Signin'}
+                fontSize={normalize(15)}
+                fontFamily={Fonts.MulishSemiBold}
+                textColor={'white'}
+                onPress={() => {
+                  employeeLogin();
+                }}
+              />
             </View>
-          </View>
-
-          <View
-            style={{
-              width: '100%',
-              height: 450,
-              alignSelf: 'center',
-              backgroundColor: Colors.white,
-              borderRadius: normalize(10),
-              alignItems: 'center',
-              padding: 15,
-              marginTop: 15,
-            }}
-          >
-            <Text style={styles.headerText1}>Login</Text>
-            <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'User Name'}
-              placeholder={'Enter username'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={phone}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setPhone(e)}
-              tintColor={Colors.tintGrey}
-            />
-            <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'Password'}
-              placeholder={'Enter password'}
-              keyboardType={'email'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={password}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setPassword(e)}
-              isRightIconVisible
-              rightimage={Images.eyeclose}
-              rightimageheight={normalize(15)}
-              rightimagewidth={normalize(15)}
-              tintColor={Colors.tintGrey}
-              secureTextEntry={secure1}
-              onRightPress={() => {
-                setSecure1(!secure1);
-              }}
-            />
-
-            <Button
-              height={normalize(45)}
-              marginTop={normalize(25)}
-              width={'100%'}
-              backgroundColor={Colors.skyblue}
-              title={'Signin'}
-              fontSize={normalize(15)}
-              fontFamily={Fonts.MulishSemiBold}
-              textColor={'white'}
-              onPress={() => {
-                employeeLogin();
-              }}
-            />
-          </View>
+          </KeyboardAvoidingView>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </SafeAreaView>
     </ImageBackground>
   );
 };
@@ -283,14 +259,14 @@ const styles = StyleSheet.create({
     // fontFamily: Fonts.MulishRegular,
     fontSize: normalize(22),
     marginTop: normalize(15),
-    color: Colors.darkblue,
+    color: Colors.green,
     fontWeight: '900',
     textAlign: 'center',
   },
   headerText2: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: normalize(12),
-    color: Colors.darkblue,
+    color: Colors.black,
 
     textAlign: 'center',
   },
