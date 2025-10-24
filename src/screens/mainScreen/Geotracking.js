@@ -144,9 +144,9 @@ const Geotracking = props => {
         },
         {
           enableHighAccuracy: true,
-          distanceFilter: 1, // Update every 1 meter
-          interval: 2000, // Android: Update every 2 seconds
-          fastestInterval: 1000, // Android: Fastest update rate
+          distanceFilter: 1, 
+          interval: 2000, 
+          fastestInterval: 1000, 
         },
       );
     } catch (error) {
