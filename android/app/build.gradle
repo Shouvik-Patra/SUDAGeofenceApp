@@ -77,13 +77,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.ebsattendance"
+    namespace "com.sudaParkGeofencing"
     defaultConfig {
-        applicationId "com.ebsattendance"
+        applicationId "com.sudaParkGeofencing"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 7
-        versionName "1.6"
+        versionCode 1
+        versionName "1.0"
     }
      signingConfigs {
         release {
