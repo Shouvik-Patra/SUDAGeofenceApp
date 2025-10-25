@@ -99,3 +99,6 @@ To learn more about React Native, take a look at the following resources:
 
 
 react-native start --reset-cache
+
+
+latest code is on branch dev_dhouvik
