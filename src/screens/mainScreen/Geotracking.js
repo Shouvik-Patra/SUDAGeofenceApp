@@ -343,7 +343,7 @@ const Geotracking = props => {
           </Text>
         </View>
 
-        <View style={styles.coordinatesList}>
+        {/* <View style={styles.coordinatesList}>
           <Text style={styles.coordinatesTitle}>Recent Coordinates:</Text>
           <FlatList
             data={coordinates.length > 0 ? coordinates.slice(-5).reverse() : []}
@@ -364,7 +364,7 @@ const Geotracking = props => {
             style={styles.coordinatesScroll}
             nestedScrollEnabled={true}
           />
-        </View>
+        </View> */}
 
         <View style={styles.buttonContainer}>
           {!isTracking ? (

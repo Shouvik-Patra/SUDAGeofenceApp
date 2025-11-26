@@ -74,12 +74,12 @@ const GeofencedAreaList = props => {
             </Text>
           </View>
         </View>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDelete(item)}
         >
           <Text style={styles.deleteButtonText}>🗑️</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <Text style={styles.description} numberOfLines={2}>

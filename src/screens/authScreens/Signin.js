@@ -28,9 +28,9 @@ const Signin = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   console.log('login>>', AuthReducer);
 
-  const [phone, setPhone] = useState('shouvikpatra');
+  const [phone, setPhone] = useState('');
   const [secure1, setSecure1] = useState(false);
-  const [password, setPassword] = useState('123456');
+  const [password, setPassword] = useState('');
   const [keyboardShown, setKeyboardShown] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
   const [loading, setLoading] = useState(false);

@@ -48,10 +48,12 @@ const Home = props => {
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedProjectDetails, setSelectedProjectDetails] = useState(null);
 
+  // User data state
+  const [userData, setUserData] = useState(null);
+
   const saveUserData = async data => {
     try {
       console.log('JSON.stringify(data)>>>>>>>', JSON.stringify(data));
-
       await AsyncStorage.setItem('userData', JSON.stringify(data));
       console.log('User data saved successfully!');
     } catch (error) {
@@ -59,11 +61,30 @@ const Home = props => {
     }
   };
 
-  useEffect(() => {
-    if (AuthReducer?.signinResponse != null || undefined) {
-      saveUserData(AuthReducer?.signinResponse);
+  const loadUserData = async () => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('userData');
+      if (jsonValue != null) {
+        const parsedData = JSON.parse(jsonValue);
+        setUserData(parsedData);
+        console.log('User data loaded from AsyncStorage:', parsedData);
+      } else {
+        console.log('No user data found in AsyncStorage');
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
     }
+  };
+
+  // Load user data on component mount
+  useEffect(() => {
+    loadUserData();
   }, []);
+
+  // Save user data when AuthReducer updates
+  useEffect(() => {
+    saveUserData(AuthReducer?.signinResponse);
+  }, [AuthReducer?.signinResponse]);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -219,20 +240,60 @@ const Home = props => {
         onPress_back_button={() => {}}
       />
 
-      <View style={styles.contentContainer}>
-
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <Image
-                source={Images.wblogo}
-                style={{
-                  zIndex:99,
-                  marginTop:25,
-                  height: normalize(100),
-                  width: normalize(100),
-                  alignSelf:"center",
-                  marginBottom:30
-                }}
-                resizeMode="contain"
-              />
+          source={Images.wblogo}
+          style={{
+            zIndex: 99,
+            marginTop: 25,
+            height: normalize(100),
+            width: normalize(100),
+            alignSelf: 'center',
+            marginBottom: 20,
+          }}
+          resizeMode="contain"
+        />
+
+        {/* User Information Card */}
+        {userData && (
+          <View style={styles.userInfoCard}>
+            <Text style={styles.userInfoTitle}>User Information</Text>
+
+            <View style={styles.userInfoRow}>
+              <Text style={styles.userInfoLabel}>User ID:</Text>
+              <Text style={styles.userInfoValue}>{userData.name}</Text>
+            </View>
+
+            <View style={styles.userInfoRow}>
+              <Text style={styles.userInfoLabel}>Role:</Text>
+              <Text style={styles.userInfoValue}>{userData.role_name}</Text>
+            </View>
+
+            <View style={styles.userInfoRow}>
+              <Text style={styles.userInfoLabel}>District:</Text>
+              <Text style={styles.userInfoValue}>{userData.district_name}</Text>
+            </View>
+
+            <View style={styles.userInfoRow}>
+              <Text style={styles.userInfoLabel}>Municipality:</Text>
+              <Text style={styles.userInfoValue}>
+                {userData.municipality_name}
+              </Text>
+            </View>
+
+            {userData.phone && (
+              <View style={styles.userInfoRow}>
+                <Text style={styles.userInfoLabel}>Phone:</Text>
+                <Text style={styles.userInfoValue}>{userData.phone}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Main Options */}
         <View style={styles.optionsContainer}>
           <TouchableOpacity
@@ -255,7 +316,7 @@ const Home = props => {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
 
       {/* Geofencing Modal */}
       <Modal
@@ -382,10 +443,50 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.white,
   },
-  contentContainer: {
+  scrollContainer: {
     flex: 1,
-    // justifyContent: 'center',
+  },
+  contentContainer: {
     padding: normalize(20),
+    paddingBottom: normalize(200),
+  },
+  userInfoCard: {
+    backgroundColor: Colors.white,
+    padding: normalize(20),
+    borderRadius: normalize(12),
+    borderWidth: 2,
+    borderColor: Colors.skyblue,
+    marginBottom: normalize(20),
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  userInfoTitle: {
+    fontFamily: Fonts.MulishExtraBold,
+    fontSize: 18,
+    color: Colors.black,
+    marginBottom: normalize(15),
+    textAlign: 'center',
+  },
+  userInfoRow: {
+    flexDirection: 'row',
+    marginBottom: normalize(12),
+    alignItems: 'center',
+  },
+  userInfoLabel: {
+    fontFamily: Fonts.MulishSemiBold,
+    fontSize: 14,
+    color: Colors.black,
+    width: '40%',
+  },
+  userInfoValue: {
+    fontFamily: Fonts.MulishRegular,
+    fontSize: 14,
+    color: Colors.black,
+    width: '60%',
+    flexWrap: 'wrap',
   },
   optionsContainer: {
     gap: normalize(20),

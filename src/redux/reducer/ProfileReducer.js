@@ -8,6 +8,7 @@ const initialState = {
   getParkGeofencesListResponse: {},
   createParkGeofenceResponse: {},
   geofencedArealistResponse: {},
+  deletegeofencedAreaResponse: {},
 };
 
 const ProfileSlice = createSlice({
@@ -48,6 +49,18 @@ const ProfileSlice = createSlice({
       state.error = action.error;
       state.status = action.type;
     },
+
+    deletegeofencedAreaRequest(state, action) {
+      state.status = action.type;
+    },
+    deletegeofencedAreaSuccess(state, action) {
+      state.geofencedArealistResponse = action.payload;
+      state.status = action.type;
+    },
+    deletegeofencedAreaFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
   },
 });
 
@@ -63,6 +76,11 @@ export const {
   geofencedArealistRequest,
   geofencedArealistSuccess,
   geofencedArealistFailure,
+
+  deletegeofencedAreaRequest,
+  deletegeofencedAreaSuccess,
+  deletegeofencedAreaFailure,
+  
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;
