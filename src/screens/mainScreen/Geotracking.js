@@ -10,7 +10,7 @@ import {
   Platform,
   ImageBackground,
   Dimensions,
-  FlatList,
+  Modal,
 } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import MapView, { Polyline, Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -47,6 +47,9 @@ const Geotracking = props => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [hasPermission, setHasPermission] = useState(false);
   const [initialLocation, setInitialLocation] = useState(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
   const startTimeRef = useRef(null);
   const timerIntervalRef = useRef(null);
@@ -54,10 +57,8 @@ const Geotracking = props => {
 
   useEffect(() => {
     requestLocationPermission();
-    // Set initial location from props
-    if (latitude && longitude) {
-      setInitialLocation({ latitude, longitude });
-    }
+    // Get current location on component mount
+    getCurrentLocationOnLoad();
     return () => {
       stopTracking();
     };
@@ -103,6 +104,97 @@ const Geotracking = props => {
     }
   };
 
+  const getCurrentLocationOnLoad = () => {
+    setLoadingLocation(true);
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        const location = {
+          latitude: parseFloat(lat),
+          longitude: parseFloat(lng),
+        };
+        setCurrentLocation(location);
+        setInitialLocation(location);
+        setLoadingLocation(false);
+        console.log('Current location loaded:', location);
+        
+        // Animate to current location on map
+        if (mapRef.current) {
+          mapRef.current.animateToRegion({
+            ...location,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }, 1000);
+        }
+      },
+      error => {
+        console.error('Failed to get current location:', error);
+        setLoadingLocation(false);
+        // Fallback to props location if available
+        if (latitude && longitude) {
+          const fallbackLocation = {
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude),
+          };
+          setInitialLocation(fallbackLocation);
+          setCurrentLocation(fallbackLocation);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      },
+    );
+  };
+
+  const handleGetCurrentLocation = () => {
+    if (!hasPermission) {
+      Alert.alert(
+        'Permission Required',
+        'Please grant location permission first',
+      );
+      return;
+    }
+    
+    setLoadingLocation(true);
+    Geolocation.getCurrentPosition(
+      position => {
+        const { latitude: lat, longitude: lng } = position.coords;
+        const location = {
+          latitude: parseFloat(lat),
+          longitude: parseFloat(lng),
+        };
+        setCurrentLocation(location);
+        setLoadingLocation(false);
+        
+        // Animate map to current location
+        if (mapRef.current) {
+          mapRef.current.animateToRegion({
+            ...location,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005,
+          }, 1000);
+        }
+        
+        Alert.alert(
+          'Location Updated',
+          `Lat: ${lat.toFixed(6)}\nLng: ${lng.toFixed(6)}`,
+        );
+      },
+      error => {
+        console.error('Location error:', error);
+        setLoadingLocation(false);
+        Alert.alert('Error', 'Failed to get current location: ' + error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      },
+    );
+  };
+
   const startTracking = () => {
     if (!hasPermission) {
       Alert.alert(
@@ -118,11 +210,6 @@ const Geotracking = props => {
       setElapsedTime(0);
       startTimeRef.current = Date.now();
 
-      // Add initial location from props as first coordinate
-      if (latitude && longitude) {
-        setCoordinates([{ latitude, longitude }]);
-      }
-
       // Start timer
       timerIntervalRef.current = setInterval(() => {
         if (startTimeRef.current) {
@@ -132,11 +219,49 @@ const Geotracking = props => {
         }
       }, 1000);
 
+      // Get current position first, then start watching
+      Geolocation.getCurrentPosition(
+        position => {
+          const { latitude: lat, longitude: lng } = position.coords;
+          const newCoord = { 
+            latitude: parseFloat(lat), 
+            longitude: parseFloat(lng) 
+          };
+          setCoordinates([newCoord]);
+          console.log('Initial position:', newCoord);
+        },
+        error => {
+          console.error('Initial location error:', error);
+          Alert.alert('Error', 'Failed to get initial location: ' + error.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        },
+      );
+
       // Start location tracking
       watchIdRef.current = Geolocation.watchPosition(
         position => {
           const { latitude: lat, longitude: lng } = position.coords;
-          setCoordinates(prev => [...prev, { latitude: lat, longitude: lng }]);
+          const newCoord = { 
+            latitude: parseFloat(lat), 
+            longitude: parseFloat(lng) 
+          };
+          
+          console.log('New position:', newCoord);
+          
+          setCoordinates(prev => {
+            // Avoid duplicate coordinates
+            const lastCoord = prev[prev.length - 1];
+            if (lastCoord && 
+                Math.abs(lastCoord.latitude - newCoord.latitude) < 0.000001 &&
+                Math.abs(lastCoord.longitude - newCoord.longitude) < 0.000001) {
+              return prev;
+            }
+            return [...prev, newCoord];
+          });
         },
         error => {
           console.error('Location error:', error);
@@ -146,7 +271,8 @@ const Geotracking = props => {
           enableHighAccuracy: true,
           distanceFilter: 1, 
           interval: 2000, 
-          fastestInterval: 1000, 
+          fastestInterval: 1000,
+          useSignificantChanges: false,
         },
       );
     } catch (error) {
@@ -168,10 +294,33 @@ const Geotracking = props => {
     }
 
     setIsTracking(false);
+    
+    // Show save/cancel modal
+    if (coordinates.length >= 3) {
+      setShowSaveModal(true);
+    } else {
+      // Alert.alert(
+      //   'Insufficient Coordinates',
+      //   'At least 3 coordinates are required to create a geofence. Please start tracking again.',
+      // );
+    }
   };
 
   const stopTracking = () => {
     endTracking();
+  };
+
+  const handleCancel = () => {
+    setShowSaveModal(false);
+    // Reset everything to start from beginning
+    setCoordinates([]);
+    setElapsedTime(0);
+    startTimeRef.current = null;
+  };
+
+  const handleSaveFromModal = () => {
+    setShowSaveModal(false);
+    handleSave();
   };
 
   const formatTime = seconds => {
@@ -192,7 +341,7 @@ const Geotracking = props => {
     // Close the polygon by adding the first coordinate at the end
     const polygonCoords = [...coords, coords[0]];
     const coordString = polygonCoords
-      .map(coord => `${coord.longitude} ${coord.latitude}`)
+      .map(coord => `${parseFloat(coord.longitude).toFixed(8)} ${parseFloat(coord.latitude).toFixed(8)}`)
       .join(', ');
 
     return `POLYGON((${coordString}))`;
@@ -223,6 +372,8 @@ const Geotracking = props => {
     };
 
     console.log('Payload:', JSON.stringify(payload, null, 2));
+    console.log('Total coordinates collected:', coordinates.length);
+    
     connectionrequest()
       .then(() => {
         dispatch(createParkGeofenceRequest(payload));
@@ -264,6 +415,13 @@ const Geotracking = props => {
         <View style={styles.header}>
           <Text style={styles.title}>Geofence Tracking</Text>
           <Text style={styles.subtitle}>{park_name || 'Park Name'}</Text>
+          {currentLocation && (
+            <View style={styles.locationInfo}>
+              <Text style={styles.locationText}>
+                📍 Current: {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Map View */}
@@ -273,11 +431,14 @@ const Geotracking = props => {
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={{
-              latitude: initialLocation?.latitude || latitude || 37.78825,
-              longitude: initialLocation?.longitude || longitude || -122.4324,
+              latitude: initialLocation?.latitude || parseFloat(latitude) || 37.78825,
+              longitude: initialLocation?.longitude || parseFloat(longitude) || -122.4324,
               latitudeDelta: 0.005,
               longitudeDelta: 0.005,
             }}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+            followsUserLocation={isTracking}
           >
             {/* Starting point marker */}
             {coordinates.length > 0 && (
@@ -343,29 +504,6 @@ const Geotracking = props => {
           </Text>
         </View>
 
-        {/* <View style={styles.coordinatesList}>
-          <Text style={styles.coordinatesTitle}>Recent Coordinates:</Text>
-          <FlatList
-            data={coordinates.length > 0 ? coordinates.slice(-5).reverse() : []}
-            keyExtractor={(item, index) => `coord-${index}`}
-            renderItem={({ item, index }) => (
-              <View style={styles.coordinateItem}>
-                <Text style={styles.coordinateText}>
-                  {coordinates.length - index}. Lat: {item.latitude.toFixed(6)},
-                  Lng: {item.longitude.toFixed(6)}
-                </Text>
-              </View>
-            )}
-            ListEmptyComponent={
-              <Text style={styles.noDataText}>
-                Start tracking to collect coordinates
-              </Text>
-            }
-            style={styles.coordinatesScroll}
-            nestedScrollEnabled={true}
-          />
-        </View> */}
-
         <View style={styles.buttonContainer}>
           {!isTracking ? (
             <TouchableOpacity
@@ -383,20 +521,42 @@ const Geotracking = props => {
               <Text style={styles.buttonText}>End Tracking</Text>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.saveButton,
-              coordinates.length < 3 && styles.disabledButton,
-            ]}
-            onPress={handleSave}
-            disabled={coordinates.length < 3}
-          >
-            <Text style={styles.buttonText}>Save Geofence</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Save/Cancel Modal */}
+      <Modal
+        visible={showSaveModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSaveModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Save Geofence?</Text>
+            <Text style={styles.modalText}>
+              You have collected {coordinates.length} coordinates.{'\n'}
+              Do you want to save this geofence?
+            </Text>
+            
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={handleCancel}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleSaveFromModal}
+              >
+                <Text style={styles.modalButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ImageBackground>
   );
 };
@@ -484,42 +644,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  coordinatesList: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    elevation: 2,
-    maxHeight: 200,
-  },
-  coordinatesScroll: {
-    maxHeight: 150,
-  },
-  coordinatesTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-  },
-  coordinateItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-  },
-  coordinateText: {
-    fontSize: 14,
-    color: '#666',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  noDataText: {
-    fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
-    marginTop: 20,
-  },
   buttonContainer: {
     gap: 10,
-    marginBottom: 20,
+    marginBottom: 100,
   },
   button: {
     padding: 16,
@@ -537,14 +664,63 @@ const styles = StyleSheet.create({
   stopButton: {
     backgroundColor: '#F44336',
   },
-  saveButton: {
-    backgroundColor: '#2196F3',
-    marginBottom: 100,
-  },
-  disabledButton: {
-    backgroundColor: '#BDBDBD',
-  },
   buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 400,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 2,
+  },
+  cancelButton: {
+    backgroundColor: '#757575',
+  },
+  confirmButton: {
+    backgroundColor: '#2196F3',
+  },
+  modalButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',

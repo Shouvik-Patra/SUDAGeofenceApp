@@ -32,7 +32,6 @@ const Home = props => {
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
   const isFocused = useIsFocused();
-  console.log('AuthReducer>>>>', AuthReducer?.signinResponse);
 
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -41,7 +40,7 @@ const Home = props => {
     longitude: 88.3639,
   });
 
-  // Dropdown states
+  // Dropdown States
   const [projectTypes, setProjectTypes] = useState([]);
   const [selectedProjectType, setSelectedProjectType] = useState('');
   const [filteredProjects, setFilteredProjects] = useState([]);
@@ -50,12 +49,9 @@ const Home = props => {
 
   const saveUserData = async data => {
     try {
-      console.log('JSON.stringify(data)>>>>>>>', JSON.stringify(data));
-
       await AsyncStorage.setItem('userData', JSON.stringify(data));
-      console.log('User data saved successfully!');
     } catch (error) {
-      console.error('Error saving user data:', error);
+      console.error('Error saving:' , error);
     }
   };
 
@@ -84,28 +80,26 @@ const Home = props => {
       },
       error => {
         setLoading(false);
-        console.log('Error getting location', error);
       },
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 10000 },
     );
   };
 
   const checkPermission = async () => {
-    const newCameraPermission = await Camera.requestCameraPermission();
+    await Camera.requestCameraPermission();
   };
 
-  function getParkGeofencesList() {
+  const getParkGeofencesList = () => {
     connectionrequest()
       .then(() => {
         dispatch(getParkGeofencesListRequest());
       })
-      .catch(err => {
-        console.log(err);
+      .catch(() => {
         showErrorAlert('Please connect to internet');
       });
-  }
+  };
 
-  // Extract unique project types from the data
+  // Extract unique project types
   useEffect(() => {
     if (
       ProfileReducer.getParkGeofencesListResponse &&
@@ -118,14 +112,13 @@ const Home = props => {
             .filter(type => type !== ''),
         ),
       ];
-
       setProjectTypes(types);
     }
   }, [ProfileReducer.getParkGeofencesListResponse]);
 
-  // Filter projects based on selected type
+  // Filter projects by type
   useEffect(() => {
-    if (selectedProjectType && ProfileReducer.getParkGeofencesListResponse) {
+    if (selectedProjectType) {
       const filtered = ProfileReducer.getParkGeofencesListResponse.filter(
         item => item.project_type === selectedProjectType,
       );
@@ -135,13 +128,15 @@ const Home = props => {
     } else {
       setFilteredProjects([]);
     }
-  }, [selectedProjectType, ProfileReducer.getParkGeofencesListResponse]);
+  }, [selectedProjectType]);
 
-  // Set selected project details
   const handleProjectSelect = projectId => {
     setSelectedProject(projectId);
+
     if (projectId) {
-      const project = filteredProjects.find(p => p.id.toString() === projectId);
+      const project = filteredProjects.find(
+        p => p.id.toString() === projectId,
+      );
       setSelectedProjectDetails(project);
     } else {
       setSelectedProjectDetails(null);
@@ -150,11 +145,9 @@ const Home = props => {
 
   const handleSubmit = async () => {
     const jsonValue = await AsyncStorage.getItem('userData');
-    const userDetails = await JSON.parse(jsonValue);
-    console.log('user Data=====>>', userDetails);
+    const userDetails = JSON.parse(jsonValue);
 
     if (selectedProjectDetails) {
-      console.log('Submitting project:', selectedProjectDetails);
       setShowModal(false);
       props?.navigation.navigate('Geotracking', {
         park_details_id: selectedProjectDetails?.id,
@@ -180,9 +173,7 @@ const Home = props => {
   };
 
   const handleShowGeofencedArea = () => {
-    // Navigate to show geofenced areas screen
-    // You can implement this navigation based on your requirements
-    props?.navigation.navigate('GeofencedAreaList'); // Update with your actual screen name
+    props?.navigation.navigate('GeofencedAreaList');
   };
 
   useEffect(() => {
@@ -191,20 +182,6 @@ const Home = props => {
     checkPermission();
     getParkGeofencesList();
   }, [isFocused]);
-
-  if (status == '' || ProfileReducer.status != status) {
-    switch (ProfileReducer.status) {
-      case 'Profile/getParkGeofencesListRequest':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/getParkGeofencesListSuccess':
-        status = ProfileReducer.status;
-        break;
-      case 'Profile/getParkGeofencesListFailure':
-        status = ProfileReducer.status;
-        break;
-    }
-  }
 
   return (
     <ImageBackground
@@ -220,19 +197,19 @@ const Home = props => {
       />
 
       <View style={styles.contentContainer}>
-
         <Image
-                source={Images.wblogo}
-                style={{
-                  zIndex:99,
-                  marginTop:25,
-                  height: normalize(100),
-                  width: normalize(100),
-                  alignSelf:"center",
-                  marginBottom:30
-                }}
-                resizeMode="contain"
-              />
+          source={Images.wblogo}
+          style={{
+            zIndex: 99,
+            marginTop: 25,
+            height: normalize(100),
+            width: normalize(100),
+            alignSelf: 'center',
+            marginBottom: 30,
+          }}
+          resizeMode="contain"
+        />
+
         {/* Main Options */}
         <View style={styles.optionsContainer}>
           <TouchableOpacity
@@ -257,7 +234,7 @@ const Home = props => {
         </View>
       </View>
 
-      {/* Geofencing Modal */}
+      {/* Modal */}
       <Modal
         isVisible={showModal}
         onBackdropPress={handleCloseModal}
@@ -286,39 +263,63 @@ const Home = props => {
             contentContainerStyle={styles.modalScrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Project Type Dropdown */}
+            {/* Project Type Picker */}
             <View style={styles.dropdownContainer}>
               <Text style={styles.label}>Select Project Type</Text>
-              <View style={styles.pickerWrapper}>
+
+              <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={selectedProjectType}
-                  onValueChange={itemValue => setSelectedProjectType(itemValue)}
+                  onValueChange={itemValue =>
+                    setSelectedProjectType(itemValue)
+                  }
                   style={styles.picker}
+                  dropdownIconColor="#000"
+                  mode="dropdown"
                 >
-                  <Picker.Item label="-- Select Project Type --" value="" />
+                  <Picker.Item
+                    label="-- Select Project Type --"
+                    value=""
+                    color="#000"
+                  />
+
                   {projectTypes.map((type, index) => (
-                    <Picker.Item key={index} label={type} value={type} />
+                    <Picker.Item
+                      key={index}
+                      label={type}
+                      value={type}
+                      color="#000"
+                    />
                   ))}
                 </Picker>
               </View>
             </View>
 
-            {/* Project Name Dropdown */}
-            {selectedProjectType && (
+            {/* Project Name Picker */}
+            {selectedProjectType !== '' && (
               <View style={styles.dropdownContainer}>
                 <Text style={styles.label}>Select Project Name</Text>
-                <View style={styles.pickerWrapper}>
+
+                <View style={styles.pickerContainer}>
                   <Picker
                     selectedValue={selectedProject}
                     onValueChange={handleProjectSelect}
                     style={styles.picker}
+                    dropdownIconColor="#000"
+                    mode="dropdown"
                   >
-                    <Picker.Item label="-- Select Project --" value="" />
+                    <Picker.Item
+                      label="-- Select Project --"
+                      value=""
+                      color="#000"
+                    />
+
                     {filteredProjects.map(project => (
                       <Picker.Item
                         key={project.id}
                         label={project.park_stretch_name}
                         value={project.id.toString()}
+                        color="#000"
                       />
                     ))}
                   </Picker>
@@ -326,28 +327,32 @@ const Home = props => {
               </View>
             )}
 
-            {/* Display Selected Project Details */}
+            {/* Project Details */}
             {selectedProjectDetails && (
               <View style={styles.detailsContainer}>
                 <Text style={styles.detailsTitle}>Project Details</Text>
+
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Ward:</Text>
                   <Text style={styles.detailValue}>
                     {selectedProjectDetails.ward}
                   </Text>
                 </View>
+
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Project Code:</Text>
                   <Text style={styles.detailValue}>
                     {selectedProjectDetails.project_code}
                   </Text>
                 </View>
+
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Name:</Text>
                   <Text style={styles.detailValue}>
                     {selectedProjectDetails.park_stretch_name}
                   </Text>
                 </View>
+
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Type:</Text>
                   <Text style={styles.detailValue}>
@@ -357,7 +362,7 @@ const Home = props => {
               </View>
             )}
 
-            {/* Submit Button */}
+            {/* Button */}
             {selectedProjectDetails && (
               <TouchableOpacity
                 style={styles.submitButton}
@@ -377,6 +382,8 @@ const Home = props => {
 
 export default Home;
 
+/* -------------------- STYLES -------------------- */
+
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
@@ -384,7 +391,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    // justifyContent: 'center',
     padding: normalize(20),
   },
   optionsContainer: {
@@ -397,10 +403,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.skyblue,
     elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   optionTitle: {
     fontFamily: Fonts.MulishExtraBold,
@@ -412,12 +414,10 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.MulishRegular,
     fontSize: 14,
     color: Colors.black,
-    opacity: 0.7,
   },
-  modal: {
-    justifyContent: 'flex-end',
-    margin: 0,
-  },
+
+  modal: { margin: 0, justifyContent: 'flex-end' },
+
   modalContainer: {
     backgroundColor: Colors.white,
     borderTopLeftRadius: normalize(20),
@@ -446,22 +446,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: normalize(20),
     top: normalize(20),
-    width: normalize(30),
-    height: normalize(30),
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   closeButtonText: {
     fontSize: 24,
     color: Colors.black,
-    fontWeight: '600',
   },
-  modalScrollView: {
-    flex: 1,
-  },
+
   modalScrollContent: {
     padding: normalize(20),
   },
+
   dropdownContainer: {
     marginBottom: normalize(20),
   },
@@ -471,15 +465,19 @@ const styles = StyleSheet.create({
     color: Colors.black,
     marginBottom: normalize(8),
   },
-  pickerWrapper: {
+
+  /* ----- FIXED PICKER STYLING ----- */
+  pickerContainer: {
     borderWidth: 1,
     borderColor: Colors.skyblue,
     borderRadius: normalize(8),
-    backgroundColor: Colors.white,
+    backgroundColor: '#f1f1f1',
   },
   picker: {
     height: normalize(50),
+    color: '#000',
   },
+
   detailsContainer: {
     backgroundColor: Colors.white,
     padding: normalize(15),
@@ -509,19 +507,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.black,
     width: '60%',
-    flexWrap: 'wrap',
   },
+
   submitButton: {
     backgroundColor: Colors.skyblue,
     padding: normalize(15),
     borderRadius: normalize(8),
     alignItems: 'center',
-    marginBottom: normalize(20),
+    marginBottom: normalize(30),
   },
   submitButtonText: {
     fontFamily: Fonts.MulishSemiBold,
     fontSize: 18,
     color: Colors.white,
-    fontWeight: '700',
   },
 });
