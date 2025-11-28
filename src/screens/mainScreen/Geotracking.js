@@ -35,9 +35,6 @@ const Geotracking = props => {
     municipality_id,
     park_name,
     description,
-    latitude,
-    longitude,
-    radius_meters,
   } = props?.route?.params || {};
 
   const dispatch = useDispatch();
@@ -57,7 +54,6 @@ const Geotracking = props => {
 
   useEffect(() => {
     requestLocationPermission();
-    // Get current location on component mount
     getCurrentLocationOnLoad();
     return () => {
       stopTracking();
@@ -65,7 +61,6 @@ const Geotracking = props => {
   }, []);
 
   useEffect(() => {
-    // Auto-fit map to show all coordinates
     if (coordinates.length > 0 && mapRef.current) {
       mapRef.current.fitToCoordinates(coordinates, {
         edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
@@ -95,7 +90,6 @@ const Geotracking = props => {
           );
         }
       } else {
-        // iOS permissions are handled via Info.plist
         setHasPermission(true);
       }
     } catch (error) {
@@ -118,7 +112,6 @@ const Geotracking = props => {
         setLoadingLocation(false);
         console.log('Current location loaded:', location);
         
-        // Animate to current location on map
         if (mapRef.current) {
           mapRef.current.animateToRegion({
             ...location,
@@ -130,15 +123,12 @@ const Geotracking = props => {
       error => {
         console.error('Failed to get current location:', error);
         setLoadingLocation(false);
-        // Fallback to props location if available
-        if (latitude && longitude) {
-          const fallbackLocation = {
-            latitude: parseFloat(latitude),
-            longitude: parseFloat(longitude),
-          };
-          setInitialLocation(fallbackLocation);
-          setCurrentLocation(fallbackLocation);
-        }
+        const fallbackLocation = {
+          latitude: 37.78825,
+          longitude: -122.4324,
+        };
+        setInitialLocation(fallbackLocation);
+        setCurrentLocation(fallbackLocation);
       },
       {
         enableHighAccuracy: true,
@@ -168,7 +158,6 @@ const Geotracking = props => {
         setCurrentLocation(location);
         setLoadingLocation(false);
         
-        // Animate map to current location
         if (mapRef.current) {
           mapRef.current.animateToRegion({
             ...location,
@@ -210,7 +199,6 @@ const Geotracking = props => {
       setElapsedTime(0);
       startTimeRef.current = Date.now();
 
-      // Start timer
       timerIntervalRef.current = setInterval(() => {
         if (startTimeRef.current) {
           setElapsedTime(
@@ -219,7 +207,6 @@ const Geotracking = props => {
         }
       }, 1000);
 
-      // Get current position first, then start watching
       Geolocation.getCurrentPosition(
         position => {
           const { latitude: lat, longitude: lng } = position.coords;
@@ -241,7 +228,6 @@ const Geotracking = props => {
         },
       );
 
-      // Start location tracking
       watchIdRef.current = Geolocation.watchPosition(
         position => {
           const { latitude: lat, longitude: lng } = position.coords;
@@ -253,7 +239,6 @@ const Geotracking = props => {
           console.log('New position:', newCoord);
           
           setCoordinates(prev => {
-            // Avoid duplicate coordinates
             const lastCoord = prev[prev.length - 1];
             if (lastCoord && 
                 Math.abs(lastCoord.latitude - newCoord.latitude) < 0.000001 &&
@@ -295,14 +280,8 @@ const Geotracking = props => {
 
     setIsTracking(false);
     
-    // Show save/cancel modal
     if (coordinates.length >= 3) {
       setShowSaveModal(true);
-    } else {
-      // Alert.alert(
-      //   'Insufficient Coordinates',
-      //   'At least 3 coordinates are required to create a geofence. Please start tracking again.',
-      // );
     }
   };
 
@@ -312,7 +291,6 @@ const Geotracking = props => {
 
   const handleCancel = () => {
     setShowSaveModal(false);
-    // Reset everything to start from beginning
     setCoordinates([]);
     setElapsedTime(0);
     startTimeRef.current = null;
@@ -338,13 +316,70 @@ const Geotracking = props => {
       return '';
     }
 
-    // Close the polygon by adding the first coordinate at the end
     const polygonCoords = [...coords, coords[0]];
     const coordString = polygonCoords
       .map(coord => `${parseFloat(coord.longitude).toFixed(8)} ${parseFloat(coord.latitude).toFixed(8)}`)
       .join(', ');
 
     return `POLYGON((${coordString}))`;
+  };
+
+  // Calculate the centroid (center point) of the polygon
+  const calculateCentroid = coords => {
+    if (coords.length === 0) {
+      return { latitude: 0, longitude: 0 };
+    }
+
+    let sumLat = 0;
+    let sumLng = 0;
+
+    coords.forEach(coord => {
+      sumLat += coord.latitude;
+      sumLng += coord.longitude;
+    });
+
+    return {
+      latitude: sumLat / coords.length,
+      longitude: sumLng / coords.length,
+    };
+  };
+
+  // Calculate distance between two coordinates using Haversine formula (in meters)
+  const calculateDistance = (coord1, coord2) => {
+    const R = 6371000; // Earth's radius in meters
+    const lat1 = coord1.latitude * (Math.PI / 180);
+    const lat2 = coord2.latitude * (Math.PI / 180);
+    const deltaLat = (coord2.latitude - coord1.latitude) * (Math.PI / 180);
+    const deltaLng = (coord2.longitude - coord1.longitude) * (Math.PI / 180);
+
+    const a =
+      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+      Math.cos(lat1) *
+        Math.cos(lat2) *
+        Math.sin(deltaLng / 2) *
+        Math.sin(deltaLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  // Calculate the maximum distance from centroid to any coordinate (radius)
+  const calculateRadius = (coords, centroid) => {
+    if (coords.length === 0) {
+      return 0;
+    }
+
+    let maxDistance = 0;
+
+    coords.forEach(coord => {
+      const distance = calculateDistance(centroid, coord);
+      if (distance > maxDistance) {
+        maxDistance = distance;
+      }
+    });
+
+    // Round to nearest meter and add 10% buffer
+    return Math.ceil(maxDistance * 1.1);
   };
 
   const handleSave = () => {
@@ -356,6 +391,13 @@ const Geotracking = props => {
       return;
     }
 
+    // Calculate centroid (center point)
+    const centroid = calculateCentroid(coordinates);
+    
+    // Calculate radius (max distance from center)
+    const radius = calculateRadius(coordinates, centroid);
+    
+    // Generate polygon string
     const geofencePolygon = generatePolygonString(coordinates);
 
     const payload = {
@@ -364,15 +406,17 @@ const Geotracking = props => {
       municipality_id,
       park_name,
       description,
-      latitude,
-      longitude,
-      radius_meters,
+      latitude: parseFloat(centroid.latitude.toFixed(8)),
+      longitude: parseFloat(centroid.longitude.toFixed(8)),
+      radius_meters: radius,
       geofence_polygon: geofencePolygon,
       geofence_type: 'polygon',
     };
 
     console.log('Payload:', JSON.stringify(payload, null, 2));
     console.log('Total coordinates collected:', coordinates.length);
+    console.log('Calculated Centroid:', centroid);
+    console.log('Calculated Radius (meters):', radius);
     
     connectionrequest()
       .then(() => {
@@ -431,8 +475,8 @@ const Geotracking = props => {
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={{
-              latitude: initialLocation?.latitude || parseFloat(latitude) || 37.78825,
-              longitude: initialLocation?.longitude || parseFloat(longitude) || -122.4324,
+              latitude: initialLocation?.latitude || 37.78825,
+              longitude: initialLocation?.longitude || -122.4324,
               latitudeDelta: 0.005,
               longitudeDelta: 0.005,
             }}
@@ -581,6 +625,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  locationInfo: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+  },
+  locationText: {
+    fontSize: 12,
+    color: '#666',
+  },
   mapContainer: {
     height: 300,
     marginBottom: 20,
@@ -669,7 +723,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

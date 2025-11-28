@@ -154,10 +154,10 @@ const Home = props => {
         district_id: userDetails?.district_id,
         municipality_id: userDetails?.municipality_id,
         park_name: selectedProjectDetails?.park_stretch_name,
-        description: 'Main public park...',
-        latitude: location?.latitude,
-        longitude: location?.longitude,
-        radius_meters: 200,
+        description: selectedProjectDetails?.park_stretch_name,
+        // latitude: location?.latitude,
+        // longitude: location?.longitude,
+        // radius_meters: 200,
       });
     } else {
       showErrorAlert('Please select a project first');
