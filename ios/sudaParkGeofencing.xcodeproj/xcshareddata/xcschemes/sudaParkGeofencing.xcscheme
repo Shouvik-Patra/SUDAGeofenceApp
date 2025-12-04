@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "eAttendence.app"
-               BlueprintName = "eAttendence"
-               ReferencedContainer = "container:eAttendence.xcodeproj">
+               BuildableName = "sudaParkGeofencing.app"
+               BlueprintName = "sudaParkGeofencing"
+               ReferencedContainer = "container:sudaParkGeofencing.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "eAttendenceTests.xctest"
-               BlueprintName = "eAttendenceTests"
-               ReferencedContainer = "container:eAttendence.xcodeproj">
+               BuildableName = "sudaParkGeofencingTests.xctest"
+               BlueprintName = "sudaParkGeofencingTests"
+               ReferencedContainer = "container:sudaParkGeofencing.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "eAttendence.app"
-            BlueprintName = "eAttendence"
-            ReferencedContainer = "container:eAttendence.xcodeproj">
+            BuildableName = "sudaParkGeofencing.app"
+            BlueprintName = "sudaParkGeofencing"
+            ReferencedContainer = "container:sudaParkGeofencing.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "eAttendence.app"
-            BlueprintName = "eAttendence"
-            ReferencedContainer = "container:eAttendence.xcodeproj">
+            BuildableName = "sudaParkGeofencing.app"
+            BlueprintName = "sudaParkGeofencing"
+            ReferencedContainer = "container:sudaParkGeofencing.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
