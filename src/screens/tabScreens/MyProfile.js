@@ -19,117 +19,19 @@ import { StackActions, useIsFocused } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutRequest } from '../../redux/reducer/AuthReducer';
-import {
-  profileUpdateRequest,
-  userDetailsRequest,
-} from '../../redux/reducer/ProfileReducer';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import Loader from '../../utils/helpers/Loader';
-import TextInputWithButton from '../../components/TextInputWithBotton';
 let status = '';
 const MyProfile = props => {
   const dispatch = useDispatch();
   const AuthReducer = useSelector(state => state.AuthReducer);
   const ProfileReducer = useSelector(state => state.ProfileReducer);
+  const userDetails = ProfileReducer?.userDetailsResponse;
 
   const isFocused = useIsFocused();
-  const [name, setName] = useState(AuthReducer?.signinResponse?.name);
-  const [email, setEmail] = useState(AuthReducer?.signinResponse?.phone);
-  const [phone, setPhone] = useState(AuthReducer?.signinResponse?.municipality_name);
-  const [address, setAddress] = useState('');
-  const [isEditing, setIsEditing] = useState(props?.route?.params?.isEditing || false);
-  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState(userDetails?.name);
+  const [phone, setPhone] = useState(userDetails?.municipality_name);
 
-  const [profile, setProfile] = useState();
-  const [capturedImageWithGeotag, setCapturedImageWithGeotag] = useState(null);
-
-  const [editedProfile, setEditedProfile] = useState({ ...profile });
-
-  const handleEdit = () => {
-    // setEditedProfile({ ...profile });
-    setIsEditing(true);
-  };
-
-  const handleCancel = () => {
-    // setEditedProfile({ ...profile });
-    setIsEditing(false);
-  };
-
-
-
-  function onUpdateProfile() {
-    const imageName = capturedImageWithGeotag?.split('/').pop(); // extract file name
-    const imageType = 'image/jpeg'; // or dynamically detect
-
-    // let obj = {
-    //   name: 'Shouvik Patra',
-    //   email: 'shouvik@yopmail.com',
-    //   photo: capturedImageWithGeotag ? capturedImageWithGeotag : null,
-    // };
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('email', email);
-    formData.append('address', address);
-    formData.append('photo', {
-      uri:
-        Platform.OS === 'android'
-          ? capturedImageWithGeotag
-          : capturedImageWithGeotag?.replace('file://', ''),
-      name: imageName,
-      type: imageType,
-    });
-
-    connectionrequest()
-      .then(() => {
-        dispatch(profileUpdateRequest(formData));
-      })
-      .catch(err => {
-        console.log(err);
-        showErrorAlert('Please connect to internet');
-      });
-  }
-  function userDetails() {
-    connectionrequest()
-      .then(() => {
-        dispatch(userDetailsRequest());
-      })
-      .catch(err => {
-        console.log(err);
-        showErrorAlert('Please connect to internet');
-      });
-  }
-
-  if (status == '' || ProfileReducer.status != status) {
-    switch (ProfileReducer.status) {
-      case 'Profile/userDetailsRequest':
-        status = ProfileReducer.status;
-        setLoading(true)
-        break;
-      case 'Profile/userDetailsSuccess':
-        status = ProfileReducer.status;
-        setLoading(false)
-        break;
-      case 'Profile/userDetailsFailure':
-        status = ProfileReducer.status;
-        setLoading(false)
-        break;
-
-      case 'Profile/profileUpdateRequest':
-        status = ProfileReducer.status;
-        setLoading(true)
-        break;
-      case 'Profile/profileUpdateSuccess':
-        status = ProfileReducer.status;
-        setLoading(false)
-        userDetails();
-        break;
-      case 'Profile/profileUpdateFailure':
-        status = ProfileReducer.status;
-        setLoading(false)
-        break;
-    }
-  }
- 
 
   return (
     <View
@@ -151,162 +53,42 @@ const MyProfile = props => {
           props.navigation.navigate('Notification');
         }}
       />
-      <Loader visible={loading} />
+      {/* <Loader visible={loading} /> */}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={isEditing ? handleClickPhoto : null}
-            style={styles.profileImageContainer}
-            disabled={!isEditing}
-          >
-            {ProfileReducer?.userDetailsResponse?.photo ? (
-              <Image
-                resizeMode="cover"
-                style={styles.profileImage}
-                source={{ uri: ProfileReducer?.userDetailsResponse?.photo }}
-              />
-            ) : (
-              <Image
-                source={{uri:capturedImageWithGeotag}}
-                style={styles.profileImage}
-              />
-            )}
-
-            {isEditing  || props?.route?.params?.isEditing && (
-              <View style={styles.editImageOverlay}>
-                <Text style={styles.editImageText}>Tap to change</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <Image source={Images.wblogo} resizeMode='contain' style={{height:150,width:100}}/>
           <Text style={styles.headerName}>
-            {ProfileReducer?.userDetailsResponse?.name ? ProfileReducer?.userDetailsResponse?.name :""}
+            {ProfileReducer?.userDetailsResponse?.municipality_name
+              ? ProfileReducer?.userDetailsResponse?.municipality_name
+              : ''}
           </Text>
+         
         </View>
 
-      
-        {isEditing ?
-          <View style={styles.content}>
-            <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'Full Name'}
-              placeholder={'Enter full name'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={name}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setName(e)}
-              tintColor={Colors.tintGrey}
-            />
-            <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'Email'}
-              placeholder={'Enter email'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={email}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setEmail(e)}
-              tintColor={Colors.tintGrey}
-            />
-            <TextInputWithButton
-              show={true}
-              icon={true}
-              height={normalize(45)}
-              inputWidth={'100%'}
-              marginTop={normalize(25)}
-              textColor={Colors.textInputColor}
-              InputHeaderText={'Address'}
-              placeholder={'Enter Address'}
-              placeholderTextColor={Colors.black}
-              paddingLeft={normalize(25)}
-              borderColor={Colors.inputGreyBorder}
-              borderRadius={normalize(5)}
-              editable={true}
-              fontFamily={Fonts.MulishRegular}
-              isheadertext={true}
-              value={address}
-              fontSize={normalize(14)}
-              headertxtsize={normalize(13)}
-              onChangeText={e => setAddress(e)}
-              tintColor={Colors.tintGrey}
-            />
-           
-          </View>
-          :
-          <View style={styles.content}>
-            <Text style={styles.fieldValue}>
-              {name}
-            </Text>
-            <Text style={styles.fieldValue}>
-              {phone}
-            </Text>
-            <Text style={styles.fieldValue}>
-              {email}
-            </Text>
-          </View>}
+        <View style={styles.content}>
+          <Text style={styles.fieldValue}>{name}</Text>
+          <Text style={styles.fieldValue}>{phone}</Text>
+          <Text style={styles.fieldValue}>{ProfileReducer?.userDetailsResponse?.district_name
+              ? ProfileReducer?.userDetailsResponse?.district_name
+              : ''}</Text>
+        </View>
 
         <View style={styles.buttonContainer}>
-          {isEditing  ? (
-            <View style={styles.editButtonsContainer}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={() => {
-                  onUpdateProfile();
-                }}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              {/* <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-                <Text style={styles.editButtonText}>Edit Profile</Text>
-              </TouchableOpacity> */}
-              <TouchableOpacity
-                style={[
-                  styles.editButton,
-                  { marginTop: normalize(10), backgroundColor: Colors.orange },
-                ]}
-                onPress={() => {
-                  dispatch(logoutRequest());
-                }}
-              >
-                <Text style={styles.editButtonText}>Logout</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity
+            style={[
+              styles.editButton,
+              { marginTop: normalize(10), backgroundColor: Colors.orange },
+            ]}
+            onPress={() => {
+              dispatch(logoutRequest());
+            }}
+          >
+            <Text style={styles.editButtonText}>Logout</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -399,7 +181,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    marginTop: 15
+    marginTop: 15,
   },
   nonEditableField: {
     backgroundColor: '#f0f0f0',

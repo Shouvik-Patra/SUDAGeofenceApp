@@ -18,12 +18,14 @@ import { Camera } from 'react-native-vision-camera';
 import normalize from '../../utils/helpers/normalize';
 import Geolocation from '@react-native-community/geolocation';
 import Loader from '../../utils/helpers/Loader';
-import { getParkGeofencesListRequest } from '../../redux/reducer/ProfileReducer';
+import {
+  getParkGeofencesListRequest,
+  userDetailsRequest,
+} from '../../redux/reducer/ProfileReducer';
 import { useDispatch, useSelector } from 'react-redux';
 import { useIsFocused } from '@react-navigation/native';
 import connectionrequest from '../../utils/helpers/NetInfo';
 import showErrorAlert from '../../utils/helpers/Toast';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 let status = '';
 
@@ -46,20 +48,6 @@ const Home = props => {
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [selectedProjectDetails, setSelectedProjectDetails] = useState(null);
-
-  const saveUserData = async data => {
-    try {
-      await AsyncStorage.setItem('userData', JSON.stringify(data));
-    } catch (error) {
-      console.error('Error saving:' , error);
-    }
-  };
-
-  useEffect(() => {
-    if (AuthReducer?.signinResponse != null || undefined) {
-      saveUserData(AuthReducer?.signinResponse);
-    }
-  }, []);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
@@ -93,6 +81,15 @@ const Home = props => {
     connectionrequest()
       .then(() => {
         dispatch(getParkGeofencesListRequest());
+      })
+      .catch(() => {
+        showErrorAlert('Please connect to internet');
+      });
+  };
+  const getParkUserDetails = () => {
+    connectionrequest()
+      .then(() => {
+        dispatch(userDetailsRequest());
       })
       .catch(() => {
         showErrorAlert('Please connect to internet');
@@ -134,9 +131,7 @@ const Home = props => {
     setSelectedProject(projectId);
 
     if (projectId) {
-      const project = filteredProjects.find(
-        p => p.id.toString() === projectId,
-      );
+      const project = filteredProjects.find(p => p.id.toString() === projectId);
       setSelectedProjectDetails(project);
     } else {
       setSelectedProjectDetails(null);
@@ -144,8 +139,7 @@ const Home = props => {
   };
 
   const handleSubmit = async () => {
-    const jsonValue = await AsyncStorage.getItem('userData');
-    const userDetails = JSON.parse(jsonValue);
+    const userDetails = ProfileReducer?.userDetailsResponse;
 
     if (selectedProjectDetails) {
       setShowModal(false);
@@ -155,9 +149,6 @@ const Home = props => {
         municipality_id: userDetails?.municipality_id,
         park_name: selectedProjectDetails?.park_stretch_name,
         description: selectedProjectDetails?.park_stretch_name,
-        // latitude: location?.latitude,
-        // longitude: location?.longitude,
-        // radius_meters: 200,
       });
     } else {
       showErrorAlert('Please select a project first');
@@ -181,6 +172,7 @@ const Home = props => {
     getCurrentLocation();
     checkPermission();
     getParkGeofencesList();
+    getParkUserDetails();
   }, [isFocused]);
 
   return (
@@ -214,7 +206,12 @@ const Home = props => {
         <View style={styles.optionsContainer}>
           <TouchableOpacity
             style={styles.optionCard}
-            onPress={() => setShowModal(true)}
+            onPress={() => {
+              setSelectedProjectType('');
+              setSelectedProject('');
+              setSelectedProjectDetails(null);
+              setShowModal(true);
+            }}
           >
             <Text style={styles.optionTitle}>Geofence a Area</Text>
             <Text style={styles.optionDescription}>
@@ -270,17 +267,17 @@ const Home = props => {
               <View style={styles.pickerContainer}>
                 <Picker
                   selectedValue={selectedProjectType}
-                  onValueChange={itemValue =>
-                    setSelectedProjectType(itemValue)
-                  }
+                  onValueChange={itemValue => setSelectedProjectType(itemValue)}
                   style={styles.picker}
-                  dropdownIconColor="#000"
+                  itemStyle={styles.pickerItem}
+                  dropdownIconColor="#2d5016"
                   mode="dropdown"
                 >
                   <Picker.Item
                     label="-- Select Project Type --"
                     value=""
-                    color="#000"
+                    color="#2d5016"
+                    style={styles.pickerItemStyle}
                   />
 
                   {projectTypes.map((type, index) => (
@@ -288,7 +285,8 @@ const Home = props => {
                       key={index}
                       label={type}
                       value={type}
-                      color="#000"
+                      color="#2d5016"
+                      style={styles.pickerItemStyle}
                     />
                   ))}
                 </Picker>
@@ -305,13 +303,15 @@ const Home = props => {
                     selectedValue={selectedProject}
                     onValueChange={handleProjectSelect}
                     style={styles.picker}
-                    dropdownIconColor="#000"
+                    itemStyle={styles.pickerItem}
+                    dropdownIconColor="#2d5016"
                     mode="dropdown"
                   >
                     <Picker.Item
                       label="-- Select Project --"
                       value=""
-                      color="#000"
+                      color="#2d5016"
+                      style={styles.pickerItemStyle}
                     />
 
                     {filteredProjects.map(project => (
@@ -319,7 +319,8 @@ const Home = props => {
                         key={project.id}
                         label={project.park_stretch_name}
                         value={project.id.toString()}
-                        color="#000"
+                        color="#2d5016"
+                        style={styles.pickerItemStyle}
                       />
                     ))}
                   </Picker>
@@ -466,16 +467,26 @@ const styles = StyleSheet.create({
     marginBottom: normalize(8),
   },
 
-  /* ----- FIXED PICKER STYLING ----- */
+  /* ----- GREEN & WHITE PICKER STYLING (Dark Mode Fixed) ----- */
   pickerContainer: {
-    borderWidth: 1,
-    borderColor: Colors.skyblue,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
     borderRadius: normalize(8),
-    backgroundColor: '#f1f1f1',
+    backgroundColor: '#ffffff',
+    overflow: 'hidden',
   },
   picker: {
     height: normalize(50),
-    color: '#000',
+    color: '#2d5016',
+    backgroundColor: '#f1f8f4',
+  },
+  pickerItem: {
+    backgroundColor: '#ffffff',
+    color: '#2d5016',
+  },
+  pickerItemStyle: {
+    backgroundColor: '#ffffff',
+    color: '#2d5016',
   },
 
   detailsContainer: {

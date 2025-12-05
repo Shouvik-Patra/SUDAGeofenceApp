@@ -36,6 +36,7 @@ const Geotracking = props => {
     park_name,
     description,
   } = props?.route?.params || {};
+console.log("props?.route?.params>>",props?.route?.params);
 
   const dispatch = useDispatch();
   const mapRef = useRef(null);

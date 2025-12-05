@@ -15,6 +15,18 @@ const ProfileSlice = createSlice({
   name: 'Profile',
   initialState,
   reducers: {
+    userDetailsRequest(state, action) {
+      state.status = action.type;
+    },
+    userDetailsSuccess(state, action) {
+      state.userDetailsResponse = action.payload;
+      state.status = action.type;
+    },
+    userDetailsFailure(state, action) {
+      state.error = action.error;
+      state.status = action.type;
+    },
+
     getParkGeofencesListRequest(state, action) {
       state.status = action.type;
     },
@@ -65,6 +77,10 @@ const ProfileSlice = createSlice({
 });
 
 export const {
+  userDetailsRequest,
+  userDetailsSuccess,
+  userDetailsFailure,
+
   getParkGeofencesListRequest,
   getParkGeofencesListSuccess,
   getParkGeofencesListFailure,
@@ -80,7 +96,6 @@ export const {
   deletegeofencedAreaRequest,
   deletegeofencedAreaSuccess,
   deletegeofencedAreaFailure,
-  
 } = ProfileSlice.actions;
 
 export default ProfileSlice.reducer;
